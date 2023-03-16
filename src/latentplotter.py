@@ -122,12 +122,7 @@ class Plotter():
         pass
         
 
-# Generate a list of random train 10-dim vectors
-dim = 10
-max_val = 100
-nvectors = 500
-train_latent = [random.sample(range(max_val + 1), dim) for _ in range(nvectors)] 
-test_latent = [random.sample(range(max_val + 1), dim) for _ in range(nvectors)] 
+ 
 
 # t-SNE
 tsne_df = Plotter.get_tsne_df(train_latent, test_latent)

@@ -9,18 +9,18 @@ this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-setuptools.setup(name='dimredplot',
+setuptools.setup(name='latentplot',
     version='0.0.1',
     description='Python module to produce an image plot of latent spaces.',
     author='Luis C. Garcia-Peraza Herrera',
     author_email='luiscarlos.gph@gmail.com',
     license='MIT License',
-    url='https://github.com/luiscarlosgph/endoseg',
+    url='https://github.com/luiscarlosgph/latentplot',
     packages=[
-        'dimredplot',
+        'latentplot',
     ],
     package_dir={
-        'dimredplot': 'src',
+        'latentplot': 'src',
     }, 
     install_requires = [
         'numpy', 
