@@ -1,3 +1,9 @@
+"""
+@brief  Unit tests to test that the PCA and t-SNE plots stay the same and 
+        working over time.
+@author Luis C. Garcia Peraza Herrera (luiscarlos.gph@gmail.com).
+@date   16 Mar 2023.
+"""
 import unittest
 import numpy as np
 import torch
