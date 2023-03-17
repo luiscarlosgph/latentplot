@@ -65,7 +65,7 @@ def split_cifar10_samples(samples):
     # Convert images to BGR
     bgr_images = [x[...,::-1].copy() for x in rgb_images]
 
-    return bgr_images, samples[1]
+    return bgr_images, [x.cpu().detach().numpy() for x in samples[1]]
 
 
 class TestStringMethods(unittest.TestCase):
@@ -82,7 +82,7 @@ class TestStringMethods(unittest.TestCase):
 
         # Get latent vector for the images using InceptionV3
         model = videosum.InceptionFeatureExtractor('vector')
-        feature_vectors = [model.get_latent_feature_vector(x) for x in images]
+        feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot PCA
         plotter = latentplot.Plotter(method='pca', width=1920, height=1080, metric=None)
@@ -98,7 +98,7 @@ class TestStringMethods(unittest.TestCase):
 
         # Get latent vector for the images using InceptionV3
         model = videosum.InceptionFeatureExtractor('vector')
-        feature_vectors = [model.get_latent_feature_vector(x) for x in images]
+        feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot t-SNE
         plotter = latentplot.Plotter(method='tsne', width=1920, height=1080)

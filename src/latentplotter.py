@@ -17,8 +17,8 @@ class Plotter():
     #    'tsne': Plotter._tsne,
     #}
 
-    def __init__(self, method='pca', width=1920, height=1080, thumb_width=32,
-                 thumb_height=32, **kwargs):
+    def __init__(self, method='pca', width=1920, height=1080, 
+                 tile_width=32, tile_height=32, dpi=300, **kwargs):
         """
         @param[in]  method  Method that you want to use to  
         """
@@ -26,43 +26,94 @@ class Plotter():
         self.method = method
         self.width = width
         self.height = height
-        self.thumb_width = thumb_width
-        self.thumb_height = thumb_height
+        self.tile_width = tile_width
+        self.tile_height = tile_height
+        self.dpi = dpi
 
         # Save attributes for the dimensionality reduction technique
         self.options = kwargs
 
-    def plot(self, images, labels, fv):
+    @staticmethod
+    def compute_reduced_boundaries(reduced_fv):
+        """@brief Compute the boundaries of the reduced latent space."""
+        min_x = int(np.floor(np.min(reduced_fv[:, 0])))
+        max_x = int(np.ceil(np.max(reduced_fv[:, 0])))
+        min_y = int(np.floor(np.min(reduced_fv[:, 1])))
+        max_y = int(np.ceil(np.max(reduced_fv[:, 1])))
+        return min_x, max_x, min_y, max_y
+
+    def plot(self, images, fv, labels):
         """
         @param[in]  images  Images to display in latent space.
-        @param[in]  labels  Labels corresponding to the images.
         @param[in]  fv      Feature vectors corresponding to the images.
+        @param[in]  labels  Labels corresponding to the images.
         """
+        # Check that the vectors come in an array
+        assert(type(fv) == np.ndarray)
+
         # Convert latent vectors to 2D
         reduced_fv = self._reduce_fv(fv)
-        print(reduced_fv)
+        print('shape(reduced_fv):', reduced_fv.shape)
 
-        # TODO: Compute the boundaries of the reduced latent space
+        # Compute the boundaries of the plot in the reduced space
+        min_x, max_x, min_y, max_y = \
+            Plotter.compute_reduced_boundaries(reduced_fv)
+
+        # TODO: The grid depends on the size of the latent space and the size
+        # of the tiles 
+
+        print('min_x:', min_x)
+        print('max_x:', max_x)
+        print('min_y:', min_y)
+        print('max_x:', max_y)
+
+        # TODO: Compute how many tiles of the requested tile size fit in the
+        # image of the requested resolution
+
+        # Compute figsize based on the provided resolution and DPI
+        # self.figsize = (float(width) / dpi, float(height) / dpi)
 
     def _reduce_fv(self, fv, dim=2):
+        # Check that the vectors come in an array
+        assert(type(fv) == np.ndarray)
+
+        # These are the dimensionality reduction methods that we support
         methods = {
             'pca': self._pca,
             'tsne': self._tsne,
         }
+
+        # If we are asked for a method we don't know, raise an error
         if self.method not in methods:
-            ValueError("[ERROR] Reduction method {} unknown.".format(self.method))
+            msg = "[ERROR] Reduction method {} unknown."
+            ValueError(msg.format(self.method))
         else:
-            return methods[self.method](self, fv, dim)
+            # If the output of the method is a list, we convert it to an array
+            result = methods[self.method](self, fv, dim)
+            if type(result) == np.ndarray:
+                pass
+            elif type(result) == list:
+                result = np.array(result)
+            else:
+                msg = '[ERROR] The reduction technique did not return ' \
+                    + 'a list or an array.' 
+                raise ValueError(msg)
+            return result
 
     @staticmethod
     def _pca(self, fv, dim):
-        # TODO
-        raise NotImplemented
+        """
+        @brief Performs dimensionality reduction based on PCA.
+        @returns an array of (samples, features) of shape (N, 2).
+        """
+        pca = sklearn.decomposition.PCA(n_components=dim)
+        return pca.fit_transform(fv)
 
     @staticmethod
     def _tsne(self, fv, dim, perplexity=40, n_iter=1000):
         """
         @brief Reduce dimensionality with t-SNE.
+        @returns an array of (samples, features) of shape (N, 2).
         """
         tsne = sklearn.manifold.TSNE(n_components=dim, verbose=0,
                                      perplexity=perplexity, n_iter=n_iter)
