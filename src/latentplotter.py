@@ -12,8 +12,61 @@ import scipy.spatial
 
 
 class Plotter():
-    def __init__(self):
-        pass
+    #methods = {
+    #    'pca' : Plotter._pca,
+    #    'tsne': Plotter._tsne,
+    #}
+
+    def __init__(self, method='pca', width=1920, height=1080, thumb_width=32,
+                 thumb_height=32, **kwargs):
+        """
+        @param[in]  method  Method that you want to use to  
+        """
+        # Save attributes
+        self.method = method
+        self.width = width
+        self.height = height
+        self.thumb_width = thumb_width
+        self.thumb_height = thumb_height
+
+        # Save attributes for the dimensionality reduction technique
+        self.options = kwargs
+
+    def plot(self, images, labels, fv):
+        """
+        @param[in]  images  Images to display in latent space.
+        @param[in]  labels  Labels corresponding to the images.
+        @param[in]  fv      Feature vectors corresponding to the images.
+        """
+        # Convert latent vectors to 2D
+        reduced_fv = self._reduce_fv(fv)
+        print(reduced_fv)
+
+        # TODO: Compute the boundaries of the reduced latent space
+
+    def _reduce_fv(self, fv, dim=2):
+        methods = {
+            'pca': self._pca,
+            'tsne': self._tsne,
+        }
+        if self.method not in methods:
+            ValueError("[ERROR] Reduction method {} unknown.".format(self.method))
+        else:
+            return methods[self.method](self, fv, dim)
+
+    @staticmethod
+    def _pca(self, fv, dim):
+        # TODO
+        raise NotImplemented
+
+    @staticmethod
+    def _tsne(self, fv, dim, perplexity=40, n_iter=1000):
+        """
+        @brief Reduce dimensionality with t-SNE.
+        """
+        tsne = sklearn.manifold.TSNE(n_components=dim, verbose=0,
+                                     perplexity=perplexity, n_iter=n_iter)
+        return tsne.fit_transform(fv)
 	
     @staticmethod
     def get_tsne_df(train_latent, test_latent, coord_labels=['x', 'y'],
@@ -116,18 +169,6 @@ class Plotter():
                             indices.append(list_points[0])
         return centroid_pos, indices 
 
-    @staticmethod
-    def plot2d(images, feature_vectors):
-        # TODO
-        pass
-        
 
- 
-
-# t-SNE
-tsne_df = Plotter.get_tsne_df(train_latent, test_latent)
-
-# Reduce number of samples for visualisation
-centroid_pos, indices = Plotter.prune_tsne_df(tsne_df)
-
-# TODO: Produce t-SNE plot with images instead of points
+if __name__ == '__main__':
+    raise RuntimeError('[ERROR] This module (latentplot) cannot be run as a script.')
