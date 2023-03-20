@@ -70,7 +70,7 @@ def split_cifar10_samples(samples):
 
 class TestStringMethods(unittest.TestCase):
 
-    def test_pca_plot(self, num_images=1000, width=1920, height=1080):
+    def test_pca_plot(self, num_images=100):
         """
         @brief Test that the PCA plot is produced without errors.
         """
@@ -85,11 +85,11 @@ class TestStringMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot PCA
-        plotter = latentplot.Plotter(method='pca', width=1920, height=1080, metric=None)
-        plot = plotter.plot(images, feature_vectors, labels)
-        cv2.imwrite(plot, 'test/data/pca.png')
+        plotter = latentplot.Plotter(method='pca')
+        plot = plotter.plot(images, feature_vectors)
+        cv2.imwrite('test/data/pca.png', plot)
     
-    def test_tsne_plot(self, num_images=1000, width=1920, height=1080):
+    def test_tsne_plot(self, num_images=100):
         # Get samples from CIFAR-10 
         samples = get_cifar10_samples(num_images)
 
@@ -101,9 +101,9 @@ class TestStringMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot t-SNE
-        plotter = latentplot.Plotter(method='tsne', width=1920, height=1080)
-        plot = plotter.plot(images, feature_vectors, labels)
-        cv2.imwrite(plot, 'test/data/tsne.png')
+        plotter = latentplot.Plotter(method='tsne')
+        plot = plotter.plot(images, feature_vectors)
+        cv2.imwrite('test/data/tsne.png', plot)
         
 
 if __name__ == '__main__':

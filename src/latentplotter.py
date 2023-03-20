@@ -7,8 +7,13 @@ import random
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib
+import matplotlib.pyplot as plt
 import sklearn.manifold
 import scipy.spatial
+import os
+import tempfile
+import cv2
 
 
 class Plotter():
@@ -17,61 +22,151 @@ class Plotter():
     #    'tsne': Plotter._tsne,
     #}
 
-    def __init__(self, method='pca', width=1920, height=1080, 
-                 tile_width=32, tile_height=32, dpi=300, **kwargs):
+    def __init__(self, method='pca', width=7680, height=4320, dpi=300,
+                 cell_factor=0.05, **kwargs):
         """
-        @param[in]  method  Method that you want to use to  
+        @param[in]  method       TODO
+        @param[in]  width        Desired image width. 
+                                 Default is 8K (7680x4320 pixels).
+        @param[in]  height       Desired image height.
+                                 Default is 8K (7680x4320 pixels).
+        @param[in]  dpi          TODO
+        @param[in]  cell_factor  TODO
         """
         # Save attributes
         self.method = method
         self.width = width
         self.height = height
-        self.tile_width = tile_width
-        self.tile_height = tile_height
         self.dpi = dpi
+        self.cell_factor = cell_factor
 
         # Save attributes for the dimensionality reduction technique
         self.options = kwargs
 
-    @staticmethod
-    def compute_reduced_boundaries(reduced_fv):
-        """@brief Compute the boundaries of the reduced latent space."""
-        min_x = int(np.floor(np.min(reduced_fv[:, 0])))
-        max_x = int(np.ceil(np.max(reduced_fv[:, 0])))
-        min_y = int(np.floor(np.min(reduced_fv[:, 1])))
-        max_y = int(np.ceil(np.max(reduced_fv[:, 1])))
-        return min_x, max_x, min_y, max_y
+    def plot(self, images, fv, labels=[]) -> np.ndarray:
+        """
+        @brief  Method that converts all the feature vectors to a 2D space and
+                plots the corresponding images on the reduced space. 
 
-    def plot(self, images, fv, labels):
+        @param[in]  images  BGR images to display in latent space.
+        @param[in]  fv      Feature vectors corresponding to the images. 
+        @param[in]  labels  Labels corresponding to the images. Either a list
+                            of integers or an empty list is expected.
+
+        @returns a BGR image.
         """
-        @param[in]  images  Images to display in latent space.
-        @param[in]  fv      Feature vectors corresponding to the images.
-        @param[in]  labels  Labels corresponding to the images.
-        """
-        # Check that the vectors come in an array
-        assert(type(fv) == np.ndarray)
+        # Convert lists to np.array to simplify the code
+        int_images = images if type(images) == np.ndarray else np.array(images)
+        int_fv = fv if type(fv) == np.ndarray else np.array(fv)
+        int_labels = labels if type(labels) == np.ndarray else np.array(labels)
 
         # Convert latent vectors to 2D
-        reduced_fv = self._reduce_fv(fv)
-        print('shape(reduced_fv):', reduced_fv.shape)
+        reduced_fv = self._reduce_fv(int_fv)
+        if reduced_fv.shape[1] != 2: 
+            msg = '[ERROR] The class Plotter does not support other reduced ' \
+                + 'dimensions than 2.'
+            raise ValueError(msg)
 
-        # Compute the boundaries of the plot in the reduced space
-        min_x, max_x, min_y, max_y = \
-            Plotter.compute_reduced_boundaries(reduced_fv)
+        # Hijack latent vectors so that there is one image per cell in the
+        # plot
+        pruned_fv = self._prune_fv(reduced_fv)
 
-        # TODO: The grid depends on the size of the latent space and the size
-        # of the tiles 
+        # Generate plot
+        fig = self._generate_plot(int_images, pruned_fv, int_labels)
 
-        print('min_x:', min_x)
-        print('max_x:', max_x)
-        print('min_y:', min_y)
-        print('max_x:', max_y)
+        # Convert figure into an image
+        temp_path = os.path.join(tempfile.gettempdir(), 'lplot.png')
+        fig.savefig(temp_path, dpi=self.dpi, format='png')
+        plt.close(fig)
+        im = cv2.imread(temp_path)
+        os.unlink(temp_path)
 
-        # TODO: Compute how many tiles of the requested tile size fit in the
-        # image of the requested resolution
+        return im
 
-        # Compute figsize based on the provided resolution and DPI
-        # self.figsize = (float(width) / dpi, float(height) / dpi)
+    def _prune_fv(self, reduced_fv):
+        # TODO
+        return reduced_fv
+
+    def _generate_plot(self, images: np.ndarray, reduced_fv: np.ndarray, 
+                       labels: np.ndarray, margin=1.):
+        """
+        @brief  Method that contains the matplotlib/seaborn code to produce
+                the plot of the reduced embedded space.
+
+        @param[in]  images  BGR images to display in latent space.
+        @param[in]  fv      Feature vectors corresponding to the images. 
+        @param[in]  labels  Labels corresponding to the images.
+        @param[in]  margin  Margin to add to the sides of the reduced 
+                            embedded space so that we plot the images properly.
+
+        @returns  a matplotlib figure containing the plot.
+        """
+        # sanity check, we work only with numpy arrays to simplify the code
+        assert(type(images) == np.ndarray)
+        assert(type(reduced_fv) == np.ndarray)
+        assert(type(labels) == np.ndarray)
+
+        # Create figure
+        sns.set_style('white')
+        fig, ax = plt.subplots(figsize=(float(self.width) / self.dpi, 
+            float(self.height) / self.dpi))
+        ax.set_axis_bgcolor = 'black'
+        min_x = np.min(reduced_fv[:, 0])
+        max_x = np.max(reduced_fv[:, 0])
+        min_y = np.min(reduced_fv[:, 1])
+        max_y = np.max(reduced_fv[:, 1])
+        ax.set_xlim(min_x - margin, max_x + margin)
+        ax.set_ylim(min_y - margin, max_y + margin)
+        cell_width = float(max_x - min_x) * self.cell_factor
+        cell_height = float(max_y - min_y) * self.cell_factor
+
+        # Plot all the images
+        for i in range(len(images)):
+            # Read image and reduced feature vector
+            im = images[i, ...]
+            fv = reduced_fv[i, :]
+            
+            # Display image on plot
+            self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height))
+
+            # If the type of the label is a class index, we use it
+            #if type(label) == int:
+            #label = labels[i]
+            #    print('label.shape:', label.shape)
+
+        # Tight layout and black background
+        ax.set_facecolor('black')
+        plt.tight_layout()
+
+        return ax.get_figure()
+
+    def _imscatter(self, im, x, y, ax, size, border=False, linewidth=0, 
+            edge_val=None, edge_min=0, edge_max=1, cmap='RdYlGn', fontsize=6):
+       	# Convert image to RGB
+        im_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        
+        # Display image on the plot
+        xmin = x - size[0] / 2.
+        xmax = xmin + size[0] 
+        ymin = y - size[1] / 2.
+        ymax = ymin + size[1]
+        ax.imshow(im_rgb, extent=(xmin, xmax, ymin, ymax), origin='upper')
+
+        # FIXME: Decide edgecolur according to the value given by the user
+        if edge_val is not None:
+            norm = matplotlib.colors.Normalize(vmin=edge_min, vmax=edge_max, clip=True)
+            mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+            edgecolor = mapper.to_rgba(edge_val) 
+            ax.text(x, y, "%.1f" % (edge_val * 100), fontsize=fontsize, color='white')
+        else:
+            edgecolor = None
+
+        # FIXME: Create a rectangle patch
+        rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
+            linewidth=linewidth, edgecolor=edgecolor, facecolor='None')
+        ax.add_patch(rect)
+
+        return ax  
 
     def _reduce_fv(self, fv, dim=2):
         # Check that the vectors come in an array
