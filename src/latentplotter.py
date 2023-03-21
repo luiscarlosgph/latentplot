@@ -16,23 +16,23 @@ import tempfile
 import cv2
 
 
-class Plotter():
-    #methods = {
-    #    'pca' : Plotter._pca,
-    #    'tsne': Plotter._tsne,
-    #}
-
-    def __init__(self, method='pca', width=7680, height=4320, dpi=300,
+class Plotter:
+    def __init__(self, method='pca', width=15360, height=8640, dpi=300,
                  cell_factor=0.05, **kwargs):
         """
-        @param[in]  method       TODO
+        @param[in]  method       Method used to reduce the feature vectors to
+                                 a 2D space. Available options: pca, tsne.
         @param[in]  width        Desired image width. 
-                                 Default is 8K (7680x4320 pixels).
         @param[in]  height       Desired image height.
-                                 Default is 8K (7680x4320 pixels).
-        @param[in]  dpi          TODO
-        @param[in]  cell_factor  TODO
+        @param[in]  dpi          DPI for the output image.
+        @param[in]  cell_factor  Proportion of the reduced space that each
+                                 cell will occupy.
         """
+        # Check that the reduction method is known
+        if method not in Plotter.methods:
+            msg = "[ERROR] Reduction method {} unknown."
+            ValueError(msg.format(self.method))
+
         # Save attributes
         self.method = method
         self.width = width
@@ -88,16 +88,21 @@ class Plotter():
         return reduced_fv
 
     def _generate_plot(self, images: np.ndarray, reduced_fv: np.ndarray, 
-                       labels: np.ndarray, margin=1.):
+                       labels: np.ndarray, margin_factor=0.05):
         """
         @brief  Method that contains the matplotlib/seaborn code to produce
                 the plot of the reduced embedded space.
 
-        @param[in]  images  BGR images to display in latent space.
-        @param[in]  fv      Feature vectors corresponding to the images. 
-        @param[in]  labels  Labels corresponding to the images.
-        @param[in]  margin  Margin to add to the sides of the reduced 
-                            embedded space so that we plot the images properly.
+        @param[in]  images         BGR images to display in latent space.
+        @param[in]  fv             Feature vectors corresponding to the images. 
+        @param[in]  labels         Labels corresponding to the images.
+        @param[in]  margin_factor  Margin to add to the sides of the reduced 
+                                   embedded space so that we plot the images 
+                                   properly. This is a proportion, i.e. to 
+                                   compute the margin it will be multiplied
+                                   by (max_x - min_x) to calculate the
+                                   horizontal margin or (max_y - min_y) to
+                                   compute the vertical margin.
 
         @returns  a matplotlib figure containing the plot.
         """
@@ -110,13 +115,15 @@ class Plotter():
         sns.set_style('white')
         fig, ax = plt.subplots(figsize=(float(self.width) / self.dpi, 
             float(self.height) / self.dpi))
-        ax.set_axis_bgcolor = 'black'
+        #ax.set_axis_bgcolor = 'black'
         min_x = np.min(reduced_fv[:, 0])
         max_x = np.max(reduced_fv[:, 0])
         min_y = np.min(reduced_fv[:, 1])
         max_y = np.max(reduced_fv[:, 1])
-        ax.set_xlim(min_x - margin, max_x + margin)
-        ax.set_ylim(min_y - margin, max_y + margin)
+        margin_x = (max_x - min_x) * margin_factor
+        margin_y = (max_y - min_y) * margin_factor
+        ax.set_xlim(min_x - margin_x, max_x + margin_x)
+        ax.set_ylim(min_y - margin_y, max_y + margin_y)
         cell_width = float(max_x - min_x) * self.cell_factor
         cell_height = float(max_y - min_y) * self.cell_factor
 
@@ -135,7 +142,7 @@ class Plotter():
             #    print('label.shape:', label.shape)
 
         # Tight layout and black background
-        ax.set_facecolor('black')
+        #ax.set_facecolor('black')
         plt.tight_layout()
 
         return ax.get_figure()
@@ -170,32 +177,20 @@ class Plotter():
 
     def _reduce_fv(self, fv, dim=2):
         # Check that the vectors come in an array
-        assert(type(fv) == np.ndarray)
+        assert(type(fv) == np.ndarray) 
 
-        # These are the dimensionality reduction methods that we support
-        methods = {
-            'pca': self._pca,
-            'tsne': self._tsne,
-        }
-
-        # If we are asked for a method we don't know, raise an error
-        if self.method not in methods:
-            msg = "[ERROR] Reduction method {} unknown."
-            ValueError(msg.format(self.method))
+        # If the output of the method is a list, we convert it to an array
+        result = Plotter.methods[self.method](self, fv, dim)
+        if type(result) == np.ndarray:
+            pass
+        elif type(result) == list:
+            result = np.array(result)
         else:
-            # If the output of the method is a list, we convert it to an array
-            result = methods[self.method](self, fv, dim)
-            if type(result) == np.ndarray:
-                pass
-            elif type(result) == list:
-                result = np.array(result)
-            else:
-                msg = '[ERROR] The reduction technique did not return ' \
-                    + 'a list or an array.' 
-                raise ValueError(msg)
-            return result
+            msg = '[ERROR] The reduction technique did not return ' \
+                + 'a list or an array.' 
+            raise ValueError(msg)
+        return result
 
-    @staticmethod
     def _pca(self, fv, dim):
         """
         @brief Performs dimensionality reduction based on PCA.
@@ -204,7 +199,6 @@ class Plotter():
         pca = sklearn.decomposition.PCA(n_components=dim)
         return pca.fit_transform(fv)
 
-    @staticmethod
     def _tsne(self, fv, dim, perplexity=40, n_iter=1000):
         """
         @brief Reduce dimensionality with t-SNE.
@@ -314,6 +308,12 @@ class Plotter():
                             centroid_pos.append([x, y])
                             indices.append(list_points[0])
         return centroid_pos, indices 
+    
+    # These are the dimensionality reduction methods that we support
+    methods = {
+        'pca': _pca,
+        'tsne': _tsne,
+    }
 
 
 if __name__ == '__main__':
