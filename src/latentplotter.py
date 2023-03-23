@@ -1,5 +1,5 @@
 """
-@brief  TODO
+@brief  Module to plot the latent space of a group of images.
 @author Luis C. Garcia Peraza Herrera (luiscarlos.gph@gmail.com).
 @date   1 Mar 2023.
 """
@@ -48,10 +48,11 @@ class Plotter:
         @brief  Method that converts all the feature vectors to a 2D space and
                 plots the corresponding images on the reduced space. 
 
-        @param[in]  images  BGR images to display in latent space.
-        @param[in]  fv      Feature vectors corresponding to the images. 
-        @param[in]  labels  Labels corresponding to the images. Either a list
-                            of integers or an empty list is expected.
+        @param[in]  images         BGR images to display in latent space.
+        @param[in]  fv             Feature vectors corresponding to the images. 
+        @param[in]  labels         Labels corresponding to the images. 
+                                   Either a list of integers or an empty list 
+                                   is expected.
 
         @returns a BGR image.
         """
@@ -69,26 +70,111 @@ class Plotter:
 
         # Hijack latent vectors so that there is one image per cell in the
         # plot
-        pruned_fv = self._prune_fv(reduced_fv)
+        hijacked_images, hijacked_fv, hijacked_labels = \
+            self._hijack_fv(int_images, reduced_fv, int_labels)
 
         # Generate plot
-        fig = self._generate_plot(int_images, pruned_fv, int_labels)
+        fig = self._generate_plot(hijacked_images, hijacked_fv, 
+            hijacked_labels)
 
         # Convert figure into an image
         temp_path = os.path.join(tempfile.gettempdir(), 'lplot.png')
-        fig.savefig(temp_path, dpi=self.dpi, format='png')
+        fig.savefig(temp_path, dpi=self.dpi, format='png', bbox_inches='tight')
         plt.close(fig)
         im = cv2.imread(temp_path)
         os.unlink(temp_path)
 
         return im
 
-    def _prune_fv(self, reduced_fv):
-        # TODO
-        return reduced_fv
+    def _hijack_fv(self, images: np.ndarray, reduced_fv: np.ndarray, 
+                   labels: np.ndarray):
+        """
+        @brief This method divides the reduced space into a grid. For each cell
+               in the grid it chooses one image to be displayed, the closest
+               to the centre of the cell.
+
+        @param[in]  images      Numpy array of images, shape (n, H, W, 3).
+        @param[in]  reduced_fv  Numpy array of 2D vectors (n, m), with n
+                                samples of dimension m = 2.
+        @param[in]  labels      Numpy array of labels, can be empty.
+
+        @returns  a tuple of images, feature vectors and labels.
+        """
+        hijacked_images = []
+        hijacked_fv = []
+        hijacked_labels = []
+
+        # Check that the number of images, feature vectors and labels is the
+        # same
+        if images.shape[0] != reduced_fv.shape[0]:
+            raise ValueError('[ERROR] We need as many images as ' \
+                + 'feature vectors.')
+        if labels.shape[0] != 0 and labels.shape[0] != reduced_fv.shape[0]:   
+            raise ValueError('[ERROR] We need as many labels as ' \
+                'feature vectors.')
+
+        # Create a KDTree of all the points
+        kdtree = scipy.spatial.cKDTree(reduced_fv)
+
+        # Generate a grid on the reduced latent space
+        min_x = np.min(reduced_fv[:, 0])
+        max_x = np.max(reduced_fv[:, 0])
+        min_y = np.min(reduced_fv[:, 1])
+        max_y = np.max(reduced_fv[:, 1])
+        cell_width = (max_x - min_x) * self.cell_factor
+        cell_height = (max_y - min_y) * self.cell_factor
+        cell_half_width = .5 * cell_width
+        cell_half_height = .5 * cell_height
+        x_values = np.linspace(min_x - cell_width, max_x + cell_width)
+        y_values = np.linspace(min_y - cell_height, max_y + cell_height)
+
+        # Loop over the reduced latent space
+        for i in range(y_values.shape[0]):
+            for j in range(x_values.shape[0]):
+                # Get coordinate of the point
+                x = x_values[j]
+                y = y_values[i]
+
+                # Find the closest point in the reduced space
+                idx = self._get_closest_image(np.array([x, y]), kdtree)
+                
+                # Check if the closest point is inside the cell 
+                closest_x = reduced_fv[idx, 0]
+                closest_y = reduced_fv[idx, 1]
+                if abs(closest_x - x) < cell_half_width \
+                        and abs(closest_y - y) < cell_half_height:
+                    hijacked_images.append(images[idx])
+                    hijacked_fv.append([x, y])
+                    if labels.shape[0] != 0:
+                        hijacked_labels.append(labels[idx])
+
+        return np.array(hijacked_images), np.array(hijacked_fv), np.array(hijacked_labels)
+
+    def _get_closest_image(self, fv, kdtree):
+        """
+        @brief Given a feature vector, find the closest image (and 
+               corresponding label) in the reduced latent space.
+
+        @param[in]  fv          Input feature vector.
+        @param[in]  kdtree      KDTree of the reduced latent space.
+
+        @returns  the index of the closest element.
+        """
+        nearest_image = None
+        label = None
+
+        # Sanity checks
+        if fv.shape[0] != 2:
+            raise NotImplemented('[ERROR] Only feature vectors of ' \
+                + 'dimension 2 are supported.')
+
+        # Find the closest vector to the one provided
+        distances, indices = kdtree.query([fv])
+
+        return indices[0]
 
     def _generate_plot(self, images: np.ndarray, reduced_fv: np.ndarray, 
-                       labels: np.ndarray, margin_factor=0.05):
+                       labels: np.ndarray):
         """
         @brief  Method that contains the matplotlib/seaborn code to produce
                 the plot of the reduced embedded space.
@@ -96,13 +182,6 @@ class Plotter:
         @param[in]  images         BGR images to display in latent space.
         @param[in]  fv             Feature vectors corresponding to the images. 
         @param[in]  labels         Labels corresponding to the images.
-        @param[in]  margin_factor  Margin to add to the sides of the reduced 
-                                   embedded space so that we plot the images 
-                                   properly. This is a proportion, i.e. to 
-                                   compute the margin it will be multiplied
-                                   by (max_x - min_x) to calculate the
-                                   horizontal margin or (max_y - min_y) to
-                                   compute the vertical margin.
 
         @returns  a matplotlib figure containing the plot.
         """
@@ -120,8 +199,8 @@ class Plotter:
         max_x = np.max(reduced_fv[:, 0])
         min_y = np.min(reduced_fv[:, 1])
         max_y = np.max(reduced_fv[:, 1])
-        margin_x = (max_x - min_x) * margin_factor
-        margin_y = (max_y - min_y) * margin_factor
+        margin_x = (max_x - min_x) * self.cell_factor
+        margin_y = (max_y - min_y) * self.cell_factor
         ax.set_xlim(min_x - margin_x, max_x + margin_x)
         ax.set_ylim(min_y - margin_y, max_y + margin_y)
         cell_width = float(max_x - min_x) * self.cell_factor
@@ -143,7 +222,7 @@ class Plotter:
 
         # Tight layout and black background
         #ax.set_facecolor('black')
-        plt.tight_layout()
+        #plt.tight_layout()
 
         return ax.get_figure()
 
@@ -207,63 +286,6 @@ class Plotter:
         tsne = sklearn.manifold.TSNE(n_components=dim, verbose=0,
                                      perplexity=perplexity, n_iter=n_iter)
         return tsne.fit_transform(fv)
-	
-    @staticmethod
-    def get_tsne_df(train_latent, test_latent, coord_labels=['x', 'y'],
-            split_col_name='split', perplexity=40, n_iter=1000):
-        """
-        @brief Takes a list of vectors for training and testing and produces a 
-               Pandas DataFrame with the t-SNE representation of them.
-        @param[in]  train_latent    List of arrays. Each array has only one 
-                                    dimension and represents an image.
-        @param[in]  test_latent     List of arrays. Each array has only one 
-                                    dimension and represents an image.
-        @param[in]  coord_labels    List of strings with the names of the
-                                    axes of the reduced space, for example if
-                                    you want a 2D reduced space pass something 
-                                    like ['x', 'y'] or ['tsne-1', 'tsne-2'].
-                                    For 3D you can pass ['x', 'y', 'z'] or 
-                                    ['tsne-1', 'tsne-2', tsne-3'].
-        @param[in]  split_col_name  Name of the dataframe column with the 
-                                    string 'train' or 'test'.
-        @param[in]  perplexity      t-SNE perplexity.
-        @param[in]  n_iter          Number of t-SNE iterations.
-        @returns a pandas.DataFrame with the columns 'x', 'y', 'z', 'mode' 
-                 (without 'z' if n_components=2).
-        """
-        n_components = len(coord_labels)
-        assert(n_components == 2 or n_components == 3)
-
-        # Reduce dimensionality with t-SNE 
-        tsne = sklearn.manifold.TSNE(n_components=n_components, verbose=0, 
-                                     perplexity=perplexity, n_iter=n_iter)
-        latent_reduced = tsne.fit_transform(np.vstack((train_latent, 
-                                                       test_latent)))
-        train_size = len(train_latent)
-        val_size = len(test_latent)
-        
-        # Add train samples to DataFrame
-        data = []
-        for i in range(train_size):
-            sample = {}
-            for c in range(n_components):
-                sample[coord_labels[c]] = latent_reduced[i, c]
-            sample[split_col_name] = 'train'
-            data.append(sample)
-        
-        # Add validation samples to DataFrame
-        for i in range(train_size, train_size + val_size):
-            sample = {}
-            for c in range(n_components):
-                sample[coord_labels[c]] = latent_reduced[i, c]
-            sample[split_col_name] = 'test'
-            data.append(sample)
-        
-        # Construct DataFrame
-        df = pd.DataFrame(data=data, columns=coord_labels[:n_components] \
-            + [split_col_name])
-        
-        return df
     
     @staticmethod
     def prune_tsne_df(df, coord_labels=['x', 'y'], spacing = 1.0):
