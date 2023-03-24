@@ -25,17 +25,35 @@ $ python3 setup.py install --user
 Exemplary code snippet
 ----------------------
 
-TODO
+```python
+# Load images from CIFAR-10
+# TODO
+
+# Obtain the latent feature vectors for the images
+# TODO
+
+# Produce a 2D plot of the latent space with PCA
+# TODO
+
+# Produce a 2D plot of the latent space with t-SNE
+# TODO
+```
 
 
 Exemplary results
 -----------------
 
-TODO: CIFAR-10
+* CIFAR-10:
 
-TODO: CIFAR-100
+   TODO
 
-TODO: Cholec80
+* CIFAR-100:
+
+   TODO
+
+* Cholec80:
+
+   TODO
 
 
 Author
