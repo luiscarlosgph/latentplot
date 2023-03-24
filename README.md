@@ -16,7 +16,9 @@ Install from source
 -------------------
 
 ```bash
-TODO
+$ git clone https://github.com/luiscarlosgph/latentplot.git
+$ cd latentplot
+$ python3 setup.py install --user
 ```
 
 
