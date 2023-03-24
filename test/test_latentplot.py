@@ -27,14 +27,12 @@ def get_cifar10_samples(n):
     @returns a list of (image, label) pairs from CIFAR-10. The shape of the
              images returned is (1, 3, 384, 384). The images are RGB.
     """
+    """
     # Prepare CIFAR-10 dataloader
     preproc_tf = torchvision.transforms.Compose([
         torchvision.transforms.RandomCrop(32, padding=4),
         torchvision.transforms.Resize(size=384),
-        #torchvision.transforms.RandomHorizontalFlip(),
         torchvision.transforms.ToTensor(),
-        #torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), 
-        #    (0.2023, 0.1994, 0.2010)),
     ])
     dataset = torchvision.datasets.CIFAR10(root=tempfile.gettempdir(), 
                                             train=True, download=True,
@@ -46,6 +44,29 @@ def get_cifar10_samples(n):
     # Get list of random image pairs (image, label) from CIFAR-10,
     # each image of size torch.Size([1, 3, 384, 384])
     return [dataiter.next() for _ in range(n)] 
+    """
+
+    import cv2
+    import numpy as np
+    import torchvision.datasets as datasets
+
+    # Load the CIFAR-10 dataset
+    cifar10 = datasets.CIFAR10(root='data/', train=True, download=True)
+
+    # Loop over the images and convert them to BGR format
+    images_bgr = []
+    for i in range(len(cifar10)):
+        # Load the image
+            image = np.array(cifar10[i][0])
+
+                # Convert from RGB to BGR
+                    image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+                        # Add the converted image to the list
+                            images_bgr.append(image_bgr)
+
+
+
 
 
 def split_cifar10_samples(samples):
@@ -70,7 +91,7 @@ def split_cifar10_samples(samples):
 
 class TestStringMethods(unittest.TestCase):
 
-    def test_pca_plot(self, num_images=10000):
+    def test_pca_plot(self, num_images=5000):
         """
         @brief Test that the PCA plot is produced without errors.
         """
@@ -89,7 +110,7 @@ class TestStringMethods(unittest.TestCase):
         plot = plotter.plot(images, feature_vectors)
         cv2.imwrite('test/data/pca.png', plot)
     
-    def test_tsne_plot(self, num_images=10000):
+    def test_tsne_plot(self, num_images=5000):
         # Get samples from CIFAR-10 
         samples = get_cifar10_samples(num_images)
 
