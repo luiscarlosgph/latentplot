@@ -26,6 +26,16 @@ Exemplary code snippet
 TODO
 
 
+Exemplary results
+-----------------
+
+TODO: CIFAR-10
+
+TODO: CIFAR-100
+
+TODO: Cholec80
+
+
 Author
 ------
 
