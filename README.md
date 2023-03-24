@@ -43,15 +43,15 @@ Exemplary code snippet
 Exemplary results
 -----------------
 
-* CIFAR-10:
+* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html):
 
    TODO
 
-* CIFAR-100:
+* [CIFAR-100](https://www.cs.toronto.edu/~kriz/cifar.html):
 
    TODO
 
-* Cholec80:
+* [Cholec80](http://camma.u-strasbg.fr/datasets):
 
    TODO
 
