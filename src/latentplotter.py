@@ -18,7 +18,7 @@ import cv2
 
 class Plotter:
     def __init__(self, method='pca', width=15360, height=8640, dpi=300,
-                 cell_factor=0.05, **kwargs):
+                 cell_factor=0.01, **kwargs):
         """
         @param[in]  method       Method used to reduce the feature vectors to
                                  a 2D space. Available options: pca, tsne.
@@ -71,7 +71,7 @@ class Plotter:
         # Hijack latent vectors so that there is one image per cell in the
         # plot
         hijacked_images, hijacked_fv, hijacked_labels = \
-            self._hijack_fv(int_images, reduced_fv, int_labels)
+            self._hijack_reduced_space(int_images, reduced_fv, int_labels)
 
         # Generate plot
         fig = self._generate_plot(hijacked_images, hijacked_fv, 
@@ -86,7 +86,7 @@ class Plotter:
 
         return im
 
-    def _hijack_fv(self, images: np.ndarray, reduced_fv: np.ndarray, 
+    def _hijack_reduced_space(self, images: np.ndarray, reduced_fv: np.ndarray, 
                    labels: np.ndarray):
         """
         @brief This method divides the reduced space into a grid. For each cell
@@ -121,12 +121,13 @@ class Plotter:
         max_x = np.max(reduced_fv[:, 0])
         min_y = np.min(reduced_fv[:, 1])
         max_y = np.max(reduced_fv[:, 1])
-        cell_width = (max_x - min_x) * self.cell_factor
-        cell_height = (max_y - min_y) * self.cell_factor
+        num_cells = int(round(1. / self.cell_factor))
+        x_values = np.linspace(min_x, max_x, num_cells)
+        y_values = np.linspace(min_y, max_y, num_cells)
+        cell_width = x_values[1] - x_values[0]
+        cell_height = y_values[1] - y_values[0]
         cell_half_width = .5 * cell_width
         cell_half_height = .5 * cell_height
-        x_values = np.linspace(min_x - cell_width, max_x + cell_width)
-        y_values = np.linspace(min_y - cell_height, max_y + cell_height)
 
         # Loop over the reduced latent space
         for i in range(y_values.shape[0]):
@@ -137,16 +138,20 @@ class Plotter:
 
                 # Find the closest point in the reduced space
                 idx = self._get_closest_image(np.array([x, y]), kdtree)
-                
-                # Check if the closest point is inside the cell 
                 closest_x = reduced_fv[idx, 0]
                 closest_y = reduced_fv[idx, 1]
-                if abs(closest_x - x) < cell_half_width \
-                        and abs(closest_y - y) < cell_half_height:
-                    hijacked_images.append(images[idx])
-                    hijacked_fv.append([x, y])
-                    if labels.shape[0] != 0:
-                        hijacked_labels.append(labels[idx])
+
+                # Check if the closest point is inside the cell 
+                x_start = x - cell_half_width
+                x_end = x + cell_half_width
+                y_start = y - cell_half_height
+                y_end = y + cell_half_height
+                if x_start <= closest_x < x_end:
+                    if y_start <= closest_y < y_end:
+                        hijacked_images.append(images[idx])
+                        hijacked_fv.append([x, y])
+                        if labels.shape[0] != 0:
+                            hijacked_labels.append(labels[idx])
 
         return np.array(hijacked_images), np.array(hijacked_fv), np.array(hijacked_labels)
 
