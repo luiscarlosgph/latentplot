@@ -47,7 +47,7 @@ Exemplary results
 
    TODO
 
-* [CIFAR-100](https://www.cs.toronto.edu/~kriz/cifar.html):
+* [PascalVOC](http://host.robots.ox.ac.uk/pascal/VOC):
 
    TODO
 
