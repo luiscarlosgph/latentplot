@@ -27,6 +27,7 @@ class Plotter:
         @param[in]  dpi          DPI for the output image.
         @param[in]  cell_factor  Proportion of the reduced space that each
                                  cell will occupy.
+        @param[in]  kwargs       The rest of the arguments for the  
         """
         # Check that the reduction method is known
         if method not in Plotter.methods:
@@ -217,13 +218,17 @@ class Plotter:
             im = images[i, ...]
             fv = reduced_fv[i, :]
             
+            # If we have labels for the images
+            if labels.shape[0] != 0:
+                # If the type of the label is a class index, we use it
+                if type(labels[i]) == int:
+                    # TODO
+                    pass
+            
             # Display image on plot
             self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height))
 
-            # If the type of the label is a class index, we use it
-            #if type(label) == int:
-            #label = labels[i]
-            #    print('label.shape:', label.shape)
+            
 
         # Tight layout and black background
         #ax.set_facecolor('black')
@@ -233,6 +238,18 @@ class Plotter:
 
     def _imscatter(self, im, x, y, ax, size, border=False, linewidth=0, 
             edge_val=None, edge_min=0, edge_max=1, cmap='RdYlGn', fontsize=6):
+        """
+        @brief Displays an image on the reduced latent space plot.
+
+        @param[in]  im         BGR image to be displayed.
+        @param[in]  x          Horizontal coordinate in the plot.
+        @param[in]  y          Vertical coorinfate in the plot.
+        @param[in]  ax         Axes of the plt.subplots of the figure.
+        @param[in]  size       Size of the cell in reduced latent space 
+                               coordinates.
+        @param[in]  border     TODO
+        @param[in]  linewidth  TODO
+        """
        	# Convert image to RGB
         im_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         
@@ -259,7 +276,13 @@ class Plotter:
 
         return ax  
 
-    def _reduce_fv(self, fv, dim=2):
+    def _reduce_fv(self, fv: np.ndarray, dim: int = 2):
+        """
+        @brief Method used to reduce the feature vectors to a 2D latent
+               space that we can visualise.
+        @param[in]  fv   Feature vectors corresponding to the images. 
+        @param[in]  dim  Number of dimensions to reduce the vectors to.
+        """
         # Check that the vectors come in an array
         assert(type(fv) == np.ndarray) 
 
@@ -275,66 +298,26 @@ class Plotter:
             raise ValueError(msg)
         return result
 
-    def _pca(self, fv, dim):
+    def _pca(self, fv: np.ndarray, dim: int):
         """
         @brief Performs dimensionality reduction based on PCA.
+        @param[in]  fv   Feature vectors corresponding to the images. 
+        @param[in]  dim  Number of dimensions to reduce the vectors to.
         @returns an array of (samples, features) of shape (N, 2).
         """
         pca = sklearn.decomposition.PCA(n_components=dim)
         return pca.fit_transform(fv)
 
-    def _tsne(self, fv, dim, perplexity=40, n_iter=1000):
+    def _tsne(self, fv: np.ndarray, dim: int, perplexity=40, n_iter=1000):
         """
         @brief Reduce dimensionality with t-SNE.
+        @param[in]  fv   Feature vectors corresponding to the images. 
+        @param[in]  dim  Number of dimensions to reduce the vectors to.
         @returns an array of (samples, features) of shape (N, 2).
         """
         tsne = sklearn.manifold.TSNE(n_components=dim, verbose=0,
                                      perplexity=perplexity, n_iter=n_iter)
         return tsne.fit_transform(fv)
-    
-    @staticmethod
-    def prune_tsne_df(df, coord_labels=['x', 'y'], spacing = 1.0):
-        """
-        @brief Prune a t-SNE data frame of points so that each point can be 
-               visualised as an image without having overlap among them.
-        @param[in]  df  Pandas DataFrame with columns: 'x', 'y', 'z', 'split' 
-                        (without 'z' if n_components is == 2).
-        @returns two lists (centroid_pos, indices):
-                 centroid_pos: list of points [x, y] that represent the cell 
-                               centroids.
-                 indices: list of the indices of the images that were closest 
-                          to the centroids.
-        """
-        
-        # Get minimum and maximum for all the axes
-        n_components = len(coord_labels)
-        mins = {}
-        maxs = {}
-        for k in coord_labels:
-            mins[k] = df.min()[k]
-            maxs[k] = df.max()[k]
-
-        # Insert all the points on a kdtree
-        kdtree = scipy.spatial.cKDTree(df.to_numpy()[:, :n_components])
-
-        # Loop through the integer version of the grid and capture points closest to centroid
-        indices = []
-        centroid_pos = []
-        cell_half = .5 * spacing
-        max_dist = np.sqrt(cell_half ** 2 + cell_half ** 2)
-        for x in np.arange(int(np.floor(mins['x'])), int(np.ceil(maxs['x'])), spacing).tolist():
-            for y in np.arange(int(np.floor(mins['y'])), int(np.ceil(maxs['y'])), spacing).tolist():
-                list_points = kdtree.query_ball_point([x, y], max_dist)
-                if list_points:
-                    # Find the closest point within the cell
-                    p = kdtree.data[list_points[0], ...]
-
-                    # Insert it into the new data frame
-                    if p[0] >= x - cell_half and p[0] < x + cell_half and p[1] >= y - cell_half \
-                        and p[1] < y + cell_half:
-                            centroid_pos.append([x, y])
-                            indices.append(list_points[0])
-        return centroid_pos, indices 
     
     # These are the dimensionality reduction methods that we support
     methods = {
