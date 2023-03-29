@@ -5,20 +5,19 @@
 """
 import random
 import numpy as np
-import pandas as pd
-import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
 import sklearn.manifold
 import scipy.spatial
+import umap
 import os
 import tempfile
-import cv2
+import PIL
 
 
 class Plotter:
     def __init__(self, method='pca', width=15360, height=8640, dpi=300,
-                 cell_factor=0.01, **kwargs):
+                 cell_factor=0.01, dark_mode=True, hide_axes=True, **kwargs):
         """
         @param[in]  method       Method used to reduce the feature vectors to
                                  a 2D space. Available options: pca, tsne.
@@ -27,7 +26,11 @@ class Plotter:
         @param[in]  dpi          DPI for the output image.
         @param[in]  cell_factor  Proportion of the reduced space that each
                                  cell will occupy.
-        @param[in]  kwargs       The rest of the arguments for the  
+        @param[in]  dark_mode    Set it to False to have a white background
+                                 with black font. Default is True.
+        @param[in]  hide_axes    Hide axes, ticks and marks. Default is True.
+        @param[in]  kwargs       The rest of the arguments for the 
+                                 dimensionality reduction method.
         """
         # Check that the reduction method is known
         if method not in Plotter.methods:
@@ -40,6 +43,8 @@ class Plotter:
         self.height = height
         self.dpi = dpi
         self.cell_factor = cell_factor
+        self.dark_mode = dark_mode
+        self.hide_axes = hide_axes
 
         # Save attributes for the dimensionality reduction technique
         self.options = kwargs
@@ -82,10 +87,14 @@ class Plotter:
         temp_path = os.path.join(tempfile.gettempdir(), 'lplot.png')
         fig.savefig(temp_path, dpi=self.dpi, format='png', bbox_inches='tight')
         plt.close(fig)
-        im = cv2.imread(temp_path)
+        im = PIL.Image.open(temp_path)
         os.unlink(temp_path)
+        
+        # Resize image to the resolution expected by the user
+        im_resized = im.resize((self.width, self.height), 
+                               resample=PIL.Image.Resampling.LANCZOS)
 
-        return im
+        return im_resized
 
     def _hijack_reduced_space(self, images: np.ndarray, reduced_fv: np.ndarray, 
                    labels: np.ndarray):
@@ -118,10 +127,10 @@ class Plotter:
         kdtree = scipy.spatial.cKDTree(reduced_fv)
 
         # Generate a grid on the reduced latent space
-        min_x = np.min(reduced_fv[:, 0])
-        max_x = np.max(reduced_fv[:, 0])
-        min_y = np.min(reduced_fv[:, 1])
-        max_y = np.max(reduced_fv[:, 1])
+        min_x = reduced_fv[:, 0].min()
+        max_x = reduced_fv[:, 0].max()
+        min_y = reduced_fv[:, 1].min()
+        max_y = reduced_fv[:, 1].max()
         num_cells = int(round(1. / self.cell_factor))
         x_values = np.linspace(min_x, max_x, num_cells)
         y_values = np.linspace(min_y, max_y, num_cells)
@@ -191,27 +200,52 @@ class Plotter:
 
         @returns  a matplotlib figure containing the plot.
         """
-        # sanity check, we work only with numpy arrays to simplify the code
+        # Sanity check, we work only with numpy arrays to simplify the code
         assert(type(images) == np.ndarray)
         assert(type(reduced_fv) == np.ndarray)
         assert(type(labels) == np.ndarray)
 
-        # Create figure
-        sns.set_style('white')
-        fig, ax = plt.subplots(figsize=(float(self.width) / self.dpi, 
-            float(self.height) / self.dpi))
-        #ax.set_axis_bgcolor = 'black'
-        min_x = np.min(reduced_fv[:, 0])
-        max_x = np.max(reduced_fv[:, 0])
-        min_y = np.min(reduced_fv[:, 1])
-        max_y = np.max(reduced_fv[:, 1])
-        margin_x = (max_x - min_x) * self.cell_factor
-        margin_y = (max_y - min_y) * self.cell_factor
-        ax.set_xlim(min_x - margin_x, max_x + margin_x)
-        ax.set_ylim(min_y - margin_y, max_y + margin_y)
-        cell_width = float(max_x - min_x) * self.cell_factor
-        cell_height = float(max_y - min_y) * self.cell_factor
+        # Set dark mode if requested
+        if self.dark_mode:
+            plt.style.use('dark_background')
+        
+        # Create figure and configure the limits depending on the data
+        # The problem that justifies multiplying the resolutions by 2 below:
+        #   If we do not multiply by 2, and in fig.savefig() we do not specify
+        #   bbox_inches='tight', matplotlib would generate an image of the 
+        #   resolution expected by the user. However, the image would have 
+        #   thick white margins around the figure. On the other hand, if we 
+        #   specify bbox_inches='tight' in fig.savefig() these margins would
+        #   go, but the saved image would no longer be of the expected 
+        #   resolution. It would be smaller than the requested resolution.
+        # 
+        # Solution: make the figure 2 times larger than the requested 
+        #           resolution, so that even when the margins are removed by
+        #           the use of bbox_inches='tight' in fig.savefig(), the image
+        #           would still be around the resolution expected. Then we 
+        #           simply resize it with OpenCV to the exact resolution
+        #           requested by the user.
+        #sns.set_style('white')
+        fig, ax = plt.subplots(figsize=(2. * float(self.width) / self.dpi, 
+                                        2. * float(self.height) / self.dpi))
+        min_x = reduced_fv[:, 0].min()
+        max_x = reduced_fv[:, 0].max()
+        min_y = reduced_fv[:, 1].min()
+        max_y = reduced_fv[:, 1].max()
+        num_cells = int(round(1. / self.cell_factor))
+        x_values = np.linspace(min_x, max_x, num_cells)
+        y_values = np.linspace(min_y, max_y, num_cells)
+        cell_width = x_values[1] - x_values[0]
+        cell_height = y_values[1] - y_values[0]
+        cell_half_width = .5 * cell_width
+        cell_half_height = .5 * cell_height
+        ax.set_xlim(min_x - cell_width - cell_half_width, max_x + cell_width + cell_half_width)
+        ax.set_ylim(min_y - cell_height - cell_half_height, max_y + cell_height + cell_half_height)
 
+        # Hide axes if requested by the user
+        if self.hide_axes:
+            ax.axis('off')
+        
         # Plot all the images
         for i in range(len(images)):
             # Read image and reduced feature vector
@@ -228,18 +262,15 @@ class Plotter:
             # Display image on plot
             self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height))
 
-            
-
-        # Tight layout and black background
-        #ax.set_facecolor('black')
-        #plt.tight_layout()
-
         return ax.get_figure()
 
-    def _imscatter(self, im, x, y, ax, size, border=False, linewidth=0, 
-            edge_val=None, edge_min=0, edge_max=1, cmap='RdYlGn', fontsize=6):
+    def _imscatter(self, im, x, y, ax, size, interpolation='bilinear', 
+            border=False, linewidth=0, edge_val=None, edge_min=0, edge_max=1, 
+            cmap='RdYlGn', fontsize=6):
         """
         @brief Displays an image on the reduced latent space plot.
+        @details The x and y coordinates represent the coordinate where the
+                 centre of the image will be located.
 
         @param[in]  im         BGR image to be displayed.
         @param[in]  x          Horizontal coordinate in the plot.
@@ -251,28 +282,29 @@ class Plotter:
         @param[in]  linewidth  TODO
         """
        	# Convert image to RGB
-        im_rgb = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        
+        im_rgb = im[...,::-1].copy()
+
         # Display image on the plot
-        xmin = x - size[0] / 2.
-        xmax = xmin + size[0] 
-        ymin = y - size[1] / 2.
-        ymax = ymin + size[1]
-        ax.imshow(im_rgb, extent=(xmin, xmax, ymin, ymax), origin='upper')
+        xmin = x - .5 * size[0]
+        xmax = x + .5 * size[0] 
+        ymin = y - .5 * size[1]
+        ymax = y + .5 * size[1]
+        ax.imshow(im_rgb, origin='upper', extent=(xmin, xmax, ymin, ymax),
+                  interpolation=interpolation)
 
         # FIXME: Decide edgecolur according to the value given by the user
-        if edge_val is not None:
-            norm = matplotlib.colors.Normalize(vmin=edge_min, vmax=edge_max, clip=True)
-            mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-            edgecolor = mapper.to_rgba(edge_val) 
-            ax.text(x, y, "%.1f" % (edge_val * 100), fontsize=fontsize, color='white')
-        else:
-            edgecolor = None
+        #if edge_val is not None:
+        #    norm = matplotlib.colors.Normalize(vmin=edge_min, vmax=edge_max, clip=True)
+        #    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+        #    edgecolor = mapper.to_rgba(edge_val) 
+        #    ax.text(x, y, "%.1f" % (edge_val * 100), fontsize=fontsize, color='white')
+        #else:
+        #    edgecolor = None
 
         # FIXME: Create a rectangle patch
-        rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
-            linewidth=linewidth, edgecolor=edgecolor, facecolor='None')
-        ax.add_patch(rect)
+        #rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
+        #    linewidth=linewidth, edgecolor=edgecolor, facecolor='None')
+        #ax.add_patch(rect)
 
         return ax  
 
@@ -308,7 +340,8 @@ class Plotter:
         pca = sklearn.decomposition.PCA(n_components=dim)
         return pca.fit_transform(fv)
 
-    def _tsne(self, fv: np.ndarray, dim: int, perplexity=40, n_iter=1000):
+    def _tsne(self, fv: np.ndarray, dim: int, perplexity=40, n_iter=1000,
+            learning_rate='auto', init='pca'):
         """
         @brief Reduce dimensionality with t-SNE.
         @param[in]  fv   Feature vectors corresponding to the images. 
@@ -316,13 +349,25 @@ class Plotter:
         @returns an array of (samples, features) of shape (N, 2).
         """
         tsne = sklearn.manifold.TSNE(n_components=dim, verbose=0,
-                                     perplexity=perplexity, n_iter=n_iter)
+                                     perplexity=perplexity, n_iter=n_iter,
+                                     learning_rate=learning_rate, init=init)
         return tsne.fit_transform(fv)
+
+    def _umap(self, fv: np.ndarray, dim: int):
+        """
+        @brief Dimensionality reduction with UMAP.
+        @param[in]  fv   Feature vectors corresponding to the images. 
+        @param[in]  dim  Number of dimensions to reduce the vectors to.
+        @returns an array of (samples, features) of shape (N, 2).
+        """
+        reducer = umap.UMAP(n_components=dim)
+        return reducer.fit_transform(fv)
     
     # These are the dimensionality reduction methods that we support
     methods = {
         'pca': _pca,
         'tsne': _tsne,
+        'umap': _umap,
     }
 
 

@@ -8,11 +8,11 @@ import unittest
 import numpy as np
 import torch
 import torchvision
-import cv2
 import tempfile
-import videosum
+import PIL
 
 # My imports
+import videosum
 import latentplot
 
 
@@ -47,7 +47,7 @@ def get_cifar10_samples(n: int) -> np.ndarray:
         label = cifar10[i][1]
 
         # Convert from RGB to BGR
-        im_bgr = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+        im_bgr = im[...,::-1].copy()
         
         # Add the converted image to the list
         samples.append((im_bgr, label))
@@ -57,7 +57,8 @@ def get_cifar10_samples(n: int) -> np.ndarray:
 
 class TestVisualizationMethods(unittest.TestCase):
 
-    def test_pca_plot(self, num_images=100):
+    def test_pca_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 1000, path: str = 'test/data/pca.png'):
         """
         @brief Test that the PCA plot is produced without errors.
         """
@@ -73,9 +74,23 @@ class TestVisualizationMethods(unittest.TestCase):
         # Plot PCA
         plotter = latentplot.Plotter(method='pca')
         plot = plotter.plot(images, feature_vectors)
-        cv2.imwrite('test/data/pca.png', plot)
-    
-    def test_tsne_plot(self, num_images=100):
+        
+        # Convert plot image from BGR to RGB
+        plot_rgb = plot[...,::-1].copy()
+
+        # Write image to disk
+        im = Image.fromarray(plot_rgb)
+        im.save(path)
+
+        # Test that the image produced is of the expected resolution
+        self.assertTrue(plot.shape[0] == height)
+        self.assertTrue(plot.shape[1] == width)
+
+    def test_tsne_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 1000, path: str = 'test/data/tsne.png'):
+        """
+        @brief Test that the t-SNE plot is produced without errors.
+        """
         # Get samples from CIFAR-10 
         samples = get_cifar10_samples(num_images)
         images = [x[0] for x in samples]
@@ -88,8 +103,47 @@ class TestVisualizationMethods(unittest.TestCase):
         # Plot t-SNE
         plotter = latentplot.Plotter(method='tsne')
         plot = plotter.plot(images, feature_vectors)
-        cv2.imwrite('test/data/tsne.png', plot)
+
+        # Convert plot image from BGR to RGB
+        plot_rgb = plot[...,::-1].copy()
+
+        # Write image to disk
+        im = Image.fromarray(plot_rgb)
+        im.save(path)
+
+        # Test that the image produced is of the expected resolution
+        self.assertTrue(plot.shape[0] == height)
+        self.assertTrue(plot.shape[1] == width)
+
+    def test_umap_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 1000, path: str = 'test/data/umap.png'):
+        """
+        @brief Test that the UMAP plot is produced without errors.
+        """
+        # Get samples from CIFAR-10 
+        samples = get_cifar10_samples(num_images)
+        images = [x[0] for x in samples]
+        labels = [x[1] for x in samples]
+
+        # Get latent vector for the images using InceptionV3
+        model = videosum.InceptionFeatureExtractor('vector')
+        feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
+
+        # Plot UMAP
+        plotter = latentplot.Plotter(method='umap')
+        plot = plotter.plot(images, feature_vectors)
         
+        # Convert plot image from BGR to RGB
+        plot_rgb = plot[...,::-1].copy()
+
+        # Write image to disk
+        im = Image.fromarray(plot_rgb)
+        im.save(path)
+
+        # Test that the image produced is of the expected resolution
+        self.assertTrue(plot.shape[0] == height)
+        self.assertTrue(plot.shape[1] == width)
+
 
 if __name__ == '__main__':
     unittest.main()
