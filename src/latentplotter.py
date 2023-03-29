@@ -94,7 +94,7 @@ class Plotter:
         im_resized = im.resize((self.width, self.height), 
                                resample=PIL.Image.Resampling.LANCZOS)
 
-        return im_resized
+        return np.array(im_resized)
 
     def _hijack_reduced_space(self, images: np.ndarray, reduced_fv: np.ndarray, 
                    labels: np.ndarray):
@@ -225,9 +225,11 @@ class Plotter:
         #           would still be around the resolution expected. Then we 
         #           simply resize it with OpenCV to the exact resolution
         #           requested by the user.
-        #sns.set_style('white')
-        fig, ax = plt.subplots(figsize=(2. * float(self.width) / self.dpi, 
-                                        2. * float(self.height) / self.dpi))
+        # Note: this comment is now deprecated because if you multiply by 2 
+        #       here the image is too large for Pillow, I keep the figure of 
+        #       the original size.
+        fig, ax = plt.subplots(figsize=(float(self.width) / self.dpi, 
+                                        float(self.height) / self.dpi))
         min_x = reduced_fv[:, 0].min()
         max_x = reduced_fv[:, 0].max()
         min_y = reduced_fv[:, 1].min()
