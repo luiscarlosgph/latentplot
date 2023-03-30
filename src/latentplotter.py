@@ -13,11 +13,12 @@ import umap
 import os
 import tempfile
 import PIL
+import typing
 
 
 class Plotter:
     def __init__(self, method='pca', width=15360, height=8640, dpi=300,
-                 cell_factor=0.01, dark_mode=True, hide_axes=True, **kwargs):
+                 cell_factor=0.01, dark_mode=False, hide_axes=False, **kwargs):
         """
         @param[in]  method       Method used to reduce the feature vectors to
                                  a 2D space. Available options: pca, tsne.
@@ -85,7 +86,8 @@ class Plotter:
 
         # Convert figure into an image
         temp_path = os.path.join(tempfile.gettempdir(), 'lplot.png')
-        fig.savefig(temp_path, dpi=self.dpi, format='png', bbox_inches='tight')
+        fig.savefig(temp_path, dpi=self.dpi, format='png', 
+                    bbox_inches='tight')
         plt.close(fig)
         im = PIL.Image.open(temp_path)
         os.unlink(temp_path)
@@ -94,7 +96,9 @@ class Plotter:
         im_resized = im.resize((self.width, self.height), 
                                resample=PIL.Image.Resampling.LANCZOS)
 
-        return np.array(im_resized)
+        # Return BGR image
+        return np.array(im_resized)[:, :, ::-1].copy()
+
 
     def _hijack_reduced_space(self, images: np.ndarray, reduced_fv: np.ndarray, 
                    labels: np.ndarray):
@@ -208,28 +212,12 @@ class Plotter:
         # Set dark mode if requested
         if self.dark_mode:
             plt.style.use('dark_background')
-        
-        # Create figure and configure the limits depending on the data
-        # The problem that justifies multiplying the resolutions by 2 below:
-        #   If we do not multiply by 2, and in fig.savefig() we do not specify
-        #   bbox_inches='tight', matplotlib would generate an image of the 
-        #   resolution expected by the user. However, the image would have 
-        #   thick white margins around the figure. On the other hand, if we 
-        #   specify bbox_inches='tight' in fig.savefig() these margins would
-        #   go, but the saved image would no longer be of the expected 
-        #   resolution. It would be smaller than the requested resolution.
-        # 
-        # Solution: make the figure 2 times larger than the requested 
-        #           resolution, so that even when the margins are removed by
-        #           the use of bbox_inches='tight' in fig.savefig(), the image
-        #           would still be around the resolution expected. Then we 
-        #           simply resize it with OpenCV to the exact resolution
-        #           requested by the user.
-        # Note: this comment is now deprecated because if you multiply by 2 
-        #       here the image is too large for Pillow, I keep the figure of 
-        #       the original size.
+
+        # Create figure
         fig, ax = plt.subplots(figsize=(float(self.width) / self.dpi, 
                                         float(self.height) / self.dpi))
+        
+        # Configure figure limits depending on the data
         min_x = reduced_fv[:, 0].min()
         max_x = reduced_fv[:, 0].max()
         min_y = reduced_fv[:, 1].min()
@@ -257,7 +245,8 @@ class Plotter:
             # If we have labels for the images
             if labels.shape[0] != 0:
                 # If the type of the label is a class index, we use it
-                if type(labels[i]) == int:
+                if np.issubdtype(labels[i], np.integer):
+                    print('Hello')
                     # TODO
                     pass
             
@@ -266,24 +255,43 @@ class Plotter:
 
         return ax.get_figure()
 
-    def _imscatter(self, im, x, y, ax, size, interpolation='bilinear', 
-            border=False, linewidth=0, edge_val=None, edge_min=0, edge_max=1, 
-            cmap='RdYlGn', fontsize=6):
+    def _imscatter(self, im: np.ndarray, x: float, y: float, 
+            ax: matplotlib.axes._subplots.AxesSubplot, 
+            size: typing.Tuple[int, int], interpolation: str = 'bilinear', 
+            linewidth: int = 0, edge_val: int = None, edge_min: int = None, 
+            edge_max: int = None, cmap: str = 'RdYlGn'):
         """
         @brief Displays an image on the reduced latent space plot.
         @details The x and y coordinates represent the coordinate where the
                  centre of the image will be located.
 
-        @param[in]  im         BGR image to be displayed.
-        @param[in]  x          Horizontal coordinate in the plot.
-        @param[in]  y          Vertical coorinfate in the plot.
-        @param[in]  ax         Axes of the plt.subplots of the figure.
-        @param[in]  size       Size of the cell in reduced latent space 
-                               coordinates.
-        @param[in]  border     TODO
-        @param[in]  linewidth  TODO
+        @param[in]  im             BGR image to be displayed.
+        @param[in]  x              Horizontal coordinate in the plot.
+        @param[in]  y              Vertical coorinfate in the plot.
+        @param[in]  ax             Axes of the plt.subplots of the figure.
+        @param[in]  size           Size of the cell in reduced latent space 
+                                   coordinates.
+        @param[in]  interpolation  Interpolation method used to resample the
+                                   image onto the plot.
+        @param[in]  linewidth      Width of the rectangle line. A rectangle
+                                   that is not filled is displayed around each
+                                   image to indicate the class label of the 
+                                   image.
+        @param[in]  edge_val       Class index or value that will define the
+                                   colour of the rectangle line around the
+                                   image.
+        @param[in]  edge_min       Minimum value of the class indices.
+        @param[in]  edge_max       Maximum class index value.
+        @param[in]  cmap           Colourmap used to map the class labels into
+                                   colours.
         """
-       	# Convert image to RGB
+        # Sanity check
+        assert(edge_val is None or np.issubdtype(edge_val, np.integer))
+        if edge_val is not None:
+            assert(np.issubdtype(edge_min, np.integer))
+            assert(np.issubdtype(edge_max, np.integer))
+
+       	# Convert image to RGB for matplotlib
         im_rgb = im[...,::-1].copy()
 
         # Display image on the plot
@@ -294,14 +302,13 @@ class Plotter:
         ax.imshow(im_rgb, origin='upper', extent=(xmin, xmax, ymin, ymax),
                   interpolation=interpolation)
 
-        # FIXME: Decide edgecolur according to the value given by the user
-        #if edge_val is not None:
-        #    norm = matplotlib.colors.Normalize(vmin=edge_min, vmax=edge_max, clip=True)
-        #    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-        #    edgecolor = mapper.to_rgba(edge_val) 
-        #    ax.text(x, y, "%.1f" % (edge_val * 100), fontsize=fontsize, color='white')
-        #else:
-        #    edgecolor = None
+        # Decide edge colour according to the value (typically class index)
+        # provided by the user
+        edgecolor = None
+        if edge_val is not None:
+            norm = matplotlib.colors.Normalize(vmin=edge_min, vmax=edge_max, clip=True)
+            mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
+            edgecolor = mapper.to_rgba(edge_val) 
 
         # FIXME: Create a rectangle patch
         #rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
