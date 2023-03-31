@@ -42,20 +42,22 @@ im_tsne = plotter.plot(images, feature_vectors, labels)  # Providing labels is o
 
 The `latentplot.Plotter` constructor parameters are:
 
-* **method**: method used to reduce the feature vectors to a 2D space. Available options: **pca**, **tsne**, **umap**.      
-* **width**: desired output image width. Default is 15360 pixels (16K).                         
-* **height**: desired output image height. Default is 8640 pixels (16K).                          
-* **dpi**: DPI for the output image. Default is 300.                     
-* **cell_factor**: proportion of the reduced space that each cell will occupy. Default is 0.01.                          
-* **dark_mode**: set it to False to have a white background with black font. Default is True.              
-* **hide_axes**: hide axes, ticks and marks. Default is True.   
-* ****kwargs**: the rest of the arguments you pass will be forwarded to the dimensionality reduction method.
+| Parameter name | Description |
+| -------------- | ----------- |
+| method         | Method used to reduce the feature vectors to a 2D space. Available options: **pca**, **tsne**, **umap**. |
+| width          | Desired output image width. Default is 15360 pixels (16K). |
+| height         | Desired output image height. Default is 8640 pixels (16K). |
+| dpi            | DPI for the output image. Default is 300. |
+| cell_factor    | Proportion of the reduced latent space that each cell will occupy. Default is 0.01. |                         
+| dark_mode      | Set it to False to have a white background with black font. Default is True. |          
+| hide_axes      | Hide axes, ticks and marks. Default is True. |  
+| **kwargs       | The rest of the arguments you pass will be forwarded to the dimensionality reduction method. |
 
 
 Exemplary results
 -----------------
 
-* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html):
+* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html): the size of the images in this dataset is 32x32 pixels.
 
 
 <!---
@@ -67,6 +69,21 @@ Exemplary results
 
    TODO
 -->
+
+Notes on dimensionality reduction methods
+-----------------------------------------
+
+* **PCA** (principal component analysis): 
+
+   Assumes correlation (linear relationship) between features, sensitive to the scale of the features (features whose range is wider are more likely to become principle components), and it is not robust to outliers.
+
+* **t-SNE** (t-Distributed Stochastic Neighbor Embedding): 
+
+   TODO
+
+* **UMAP** (Uniform Manifold Approximation and Projection): 
+
+   TODO
 
 
 Author
