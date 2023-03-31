@@ -77,11 +77,11 @@ Notes on dimensionality reduction methods
 
    Assumes correlation (linear relationship) between features, sensitive to the scale of the features (features whose range is wider are more likely to become principle components), and it is not robust to outliers.
 
-* **t-SNE**: 
+* **t-SNE** (t-Distributed Stochastic Neighbor Embedding): 
 
    TODO
 
-* **UMAP**: 
+* **UMAP** (Uniform Manifold Approximation and Projection): 
 
    TODO
 
