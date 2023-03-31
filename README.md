@@ -57,7 +57,7 @@ The `latentplot.Plotter` constructor parameters are:
 Exemplary results
 -----------------
 
-* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html):
+* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html): the size of the images in this dataset is 32x32 pixels.
 
 
 <!---
