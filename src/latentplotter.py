@@ -18,10 +18,11 @@ import typing
 
 class Plotter:
     def __init__(self, method='pca', width=15360, height=8640, dpi=300,
-                 cell_factor=0.01, dark_mode=False, hide_axes=False, **kwargs):
+                 cell_factor=0.01, dark_mode=True, hide_axes=True, **kwargs):
         """
         @param[in]  method       Method used to reduce the feature vectors to
-                                 a 2D space. Available options: pca, tsne.
+                                 a 2D space. Available options: pca, tsne,
+                                 umap.
         @param[in]  width        Desired image width. 
         @param[in]  height       Desired image height.
         @param[in]  dpi          DPI for the output image.
@@ -236,6 +237,13 @@ class Plotter:
         if self.hide_axes:
             ax.axis('off')
         
+        # If labels are provided, find the smallest and largest class indices
+        edge_min = None
+        edge_max = None
+        if labels.shape[0] != 0:
+            edge_min = np.min(labels)
+            edge_max = np.max(labels)
+        
         # Plot all the images
         for i in range(len(images)):
             # Read image and reduced feature vector
@@ -243,20 +251,20 @@ class Plotter:
             fv = reduced_fv[i, :]
             
             # If we have labels for the images
+            edge_val = None
             if labels.shape[0] != 0:
                 # If the type of the label is a class index, we use it
                 if np.issubdtype(labels[i], np.integer):
-                    print('Hello')
-                    # TODO
-                    pass
+                    edge_val = labels[i] 
             
             # Display image on plot
-            self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height))
+            self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height),
+                linewidth=2, edge_val=edge_val, edge_min=edge_min, 
+                edge_max=edge_max)
 
         return ax.get_figure()
 
-    def _imscatter(self, im: np.ndarray, x: float, y: float, 
-            ax: matplotlib.axes._subplots.AxesSubplot, 
+    def _imscatter(self, im: np.ndarray, x: float, y: float, ax, 
             size: typing.Tuple[int, int], interpolation: str = 'bilinear', 
             linewidth: int = 0, edge_val: int = None, edge_min: int = None, 
             edge_max: int = None, cmap: str = 'RdYlGn'):
@@ -308,12 +316,12 @@ class Plotter:
         if edge_val is not None:
             norm = matplotlib.colors.Normalize(vmin=edge_min, vmax=edge_max, clip=True)
             mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
-            edgecolor = mapper.to_rgba(edge_val) 
+            edgecolor = mapper.to_rgba(edge_val)
 
-        # FIXME: Create a rectangle patch
-        #rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
-        #    linewidth=linewidth, edgecolor=edgecolor, facecolor='None')
-        #ax.add_patch(rect)
+        # Create a rectangle patch
+        rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
+            linewidth=linewidth, edgecolor=edgecolor, facecolor='None')
+        ax.add_patch(rect)
 
         return ax  
 

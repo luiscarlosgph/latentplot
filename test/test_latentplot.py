@@ -58,7 +58,7 @@ def get_cifar10_samples(n: int) -> np.ndarray:
 class TestVisualizationMethods(unittest.TestCase):
 
     def test_pca_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 100, path: str = 'test/data/pca.png'):
+            num_images: int = 10000, path: str = 'test/data/pca.png'):
         """
         @brief Test that the PCA plot is produced without errors.
         """
@@ -86,8 +86,8 @@ class TestVisualizationMethods(unittest.TestCase):
         self.assertTrue(plot.shape[0] == height)
         self.assertTrue(plot.shape[1] == width)
 
-    def tsne_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 100, path: str = 'test/data/tsne.png'):
+    def test_tsne_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 10000, path: str = 'test/data/tsne.png'):
         """
         @brief Test that the t-SNE plot is produced without errors.
         """
@@ -102,7 +102,7 @@ class TestVisualizationMethods(unittest.TestCase):
 
         # Plot t-SNE
         plotter = latentplot.Plotter(method='tsne')
-        plot = plotter.plot(images, feature_vectors)
+        plot = plotter.plot(images, feature_vectors, labels)
 
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
@@ -115,8 +115,8 @@ class TestVisualizationMethods(unittest.TestCase):
         self.assertTrue(plot.shape[0] == height)
         self.assertTrue(plot.shape[1] == width)
 
-    def umap_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 100, path: str = 'test/data/umap.png'):
+    def test_umap_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 10000, path: str = 'test/data/umap.png'):
         """
         @brief Test that the UMAP plot is produced without errors.
         """
@@ -131,7 +131,7 @@ class TestVisualizationMethods(unittest.TestCase):
 
         # Plot UMAP
         plotter = latentplot.Plotter(method='umap')
-        plot = plotter.plot(images, feature_vectors)
+        plot = plotter.plot(images, feature_vectors, labels)
         
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
