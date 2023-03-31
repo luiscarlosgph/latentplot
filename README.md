@@ -73,11 +73,17 @@ Exemplary results
 Notes on dimensionality reduction methods
 -----------------------------------------
 
-* **PCA** (principal component analysis): assumes correlation (linear relationship) between features, sensitive to the scale of the features (features whose range is wider are more likely to become principle components), and it is not robust to outliers.
+* **PCA** (principal component analysis): 
 
-* **t-SNE**: TODO
+   Assumes correlation (linear relationship) between features, sensitive to the scale of the features (features whose range is wider are more likely to become principle components), and it is not robust to outliers.
 
-* **UMAP**: TODO
+* **t-SNE**: 
+
+   TODO
+
+* **UMAP**: 
+
+   TODO
 
 
 Author
