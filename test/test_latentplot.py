@@ -58,10 +58,12 @@ def get_cifar10_samples(n: int) -> np.ndarray:
 class TestVisualizationMethods(unittest.TestCase):
 
     def test_pca_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 10000, path: str = 'test/data/pca.png'):
+            num_images: int = 30000, path: str = 'test/data/pca.png'):
         """
         @brief Test that the PCA plot is produced without errors.
         """
+        print('[INFO] Running PCA unit test ...')
+
         # Get samples from CIFAR-10 
         samples = get_cifar10_samples(num_images)
         images = [x[0] for x in samples]
@@ -85,12 +87,16 @@ class TestVisualizationMethods(unittest.TestCase):
         # Test that the image produced is of the expected resolution
         self.assertTrue(plot.shape[0] == height)
         self.assertTrue(plot.shape[1] == width)
+        
+        print('[INFO] PCA unit test completed.')
 
     def test_tsne_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 10000, path: str = 'test/data/tsne.png'):
+            num_images: int = 30000, path: str = 'test/data/tsne.png'):
         """
         @brief Test that the t-SNE plot is produced without errors.
         """
+        print('[INFO] Running t-SNE unit test ...')
+
         # Get samples from CIFAR-10 
         samples = get_cifar10_samples(num_images)
         images = [x[0] for x in samples]
@@ -115,11 +121,15 @@ class TestVisualizationMethods(unittest.TestCase):
         self.assertTrue(plot.shape[0] == height)
         self.assertTrue(plot.shape[1] == width)
 
+        print('[INFO] t-SNE unit test completed.')
+
     def test_umap_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 10000, path: str = 'test/data/umap.png'):
+            num_images: int = 30000, path: str = 'test/data/umap.png'):
         """
         @brief Test that the UMAP plot is produced without errors.
         """
+        print('[INFO] Running UMAP unit test ...')
+
         # Get samples from CIFAR-10 
         samples = get_cifar10_samples(num_images)
         images = [x[0] for x in samples]
@@ -143,6 +153,8 @@ class TestVisualizationMethods(unittest.TestCase):
         # Test that the image produced is of the expected resolution
         self.assertTrue(plot.shape[0] == height)
         self.assertTrue(plot.shape[1] == width)
+
+        print('[INFO] UMAP unit test completed.')
 
 
 if __name__ == '__main__':

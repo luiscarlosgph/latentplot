@@ -29,6 +29,7 @@ setuptools.setup(name='latentplot',
         'scipy',
         'umap-learn',
         'pillow',
+        'videosum',  # Required for unit tests
     ],
     long_description=long_description,
     long_description_content_type='text/markdown',
