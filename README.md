@@ -37,7 +37,7 @@ labels = [ ... ]
 
 # Produce a BGR image containing a 2D plot of the latent space with t-SNE
 plotter = latentplot.Plotter(method='tsne')                              
-im_tsne = plotter.plot(images, feature_vectors, labels)  # Providing labels here is optional
+im_tsne = plotter.plot(images, feature_vectors, labels)  # Providing labels is optional
 ```
 
 The `latentplot.Plotter` constructor parameters are:
