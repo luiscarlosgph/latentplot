@@ -58,7 +58,7 @@ Exemplary results
 * [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html):
 
 
-
+<!---
 * [PascalVOC](http://host.robots.ox.ac.uk/pascal/VOC):
 
    TODO
@@ -66,6 +66,7 @@ Exemplary results
 * [Cholec80](http://camma.u-strasbg.fr/datasets):
 
    TODO
+-->
 
 
 Author
