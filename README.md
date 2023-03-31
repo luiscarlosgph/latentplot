@@ -37,12 +37,12 @@ labels = [ ... ]
 
 # Produce a BGR image containing a 2D plot of the latent space with t-SNE
 plotter = latentplot.Plotter(method='tsne')                              
-im_tsne = plotter.plot(images, feature_vectors, labels)
+im_tsne = plotter.plot(images, feature_vectors, labels)  # Providing labels here is optional
 ```
 
-The `latentplot.Plotter` arguments are:
+The `latentplot.Plotter` constructor parameters are:
 
-* **method**: method used to reduce the feature vectors to a 2D space. Available options: pca, tsne, umap.      
+* **method**: method used to reduce the feature vectors to a 2D space. Available options: **pca**, **tsne**, **umap**.      
 * **width**: desired output image width. Default is 15360 pixels (16K).                         
 * **height**: desired output image height. Default is 8640 pixels (16K).                          
 * **dpi**: DPI for the output image. Default is 300.                     
