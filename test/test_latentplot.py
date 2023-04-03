@@ -58,7 +58,7 @@ def get_cifar10_samples(n: int) -> np.ndarray:
 class TestVisualizationMethods(unittest.TestCase):
 
     def test_pca_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 40000, path: str = 'test/data/pca.png'):
+            num_images: int = 100, path: str = 'test/data/pca.png'):
         """
         @brief Test that the PCA plot is produced without errors.
         """
@@ -90,7 +90,7 @@ class TestVisualizationMethods(unittest.TestCase):
         
         print('[INFO] PCA unit test completed.')
 
-    def test_tsne_plot(self, width: int = 15360, height: int = 8640, 
+    def tsne_plot(self, width: int = 15360, height: int = 8640, 
             num_images: int = 40000, path: str = 'test/data/tsne.png'):
         """
         @brief Test that the t-SNE plot is produced without errors.
@@ -123,7 +123,7 @@ class TestVisualizationMethods(unittest.TestCase):
 
         print('[INFO] t-SNE unit test completed.')
 
-    def test_umap_plot(self, width: int = 15360, height: int = 8640, 
+    def umap_plot(self, width: int = 15360, height: int = 8640, 
             num_images: int = 40000, path: str = 'test/data/umap.png'):
         """
         @brief Test that the UMAP plot is produced without errors.

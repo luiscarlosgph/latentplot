@@ -259,15 +259,14 @@ class Plotter:
             
             # Display image on plot
             self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height),
-                linewidth=2, edge_val=edge_val, edge_min=edge_min, 
-                edge_max=edge_max)
+                edge_val=edge_val, edge_min=edge_min, edge_max=edge_max)
 
         return ax.get_figure()
 
     def _imscatter(self, im: np.ndarray, x: float, y: float, ax, 
             size: typing.Tuple[int, int], interpolation: str = 'bilinear', 
-            linewidth: int = 0, edge_val: int = None, edge_min: int = None, 
-            edge_max: int = None, cmap: str = 'RdYlGn'):
+            lwfactor: float = 0.025, edge_val: int = None, 
+            edge_min: int = None, edge_max: int = None, cmap: str = 'RdYlGn'):
         """
         @brief Displays an image on the reduced latent space plot.
         @details The x and y coordinates represent the coordinate where the
@@ -281,10 +280,9 @@ class Plotter:
                                    coordinates.
         @param[in]  interpolation  Interpolation method used to resample the
                                    image onto the plot.
-        @param[in]  linewidth      Width of the rectangle line. A rectangle
-                                   that is not filled is displayed around each
-                                   image to indicate the class label of the 
-                                   image.
+        @param[in]  lwfactor       Factor of the width of the image that will
+                                   be used for the border in case a label is
+                                   provided.
         @param[in]  edge_val       Class index or value that will define the
                                    colour of the rectangle line around the
                                    image.
@@ -301,14 +299,14 @@ class Plotter:
 
        	# Convert image to RGB for matplotlib
         im_rgb = im[...,::-1].copy()
-
-        # Display image on the plot
-        xmin = x - .5 * size[0]
-        xmax = x + .5 * size[0] 
-        ymin = y - .5 * size[1]
-        ymax = y + .5 * size[1]
-        ax.imshow(im_rgb, origin='upper', extent=(xmin, xmax, ymin, ymax),
-                  interpolation=interpolation)
+        
+        # Compute the coordinates to plot the image
+        left   = x - .5 * size[0] 
+        right  = x + .5 * size[0]
+        bottom = y - .5 * size[1]
+        top    = y + .5 * size[1]
+        xdist = right - left
+        ydist = top - bottom
 
         # Decide edge colour according to the value (typically class index)
         # provided by the user
@@ -318,10 +316,26 @@ class Plotter:
             mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
             edgecolor = mapper.to_rgba(edge_val)
 
-        # Create a rectangle patch
-        rect = matplotlib.patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
-            linewidth=linewidth, edgecolor=edgecolor, facecolor='None')
+        # Display image border on the plot
+        margin = xdist * lwfactor
+        xy = (left + margin, bottom + margin)
+        w = xdist - 2. * margin 
+        h = ydist - 2. * margin 
+        bl_x, bl_y = ax.transData.transform((left, bottom))
+        bl_x_off, bl_y_off = ax.transData.transform((xy[0], xy[1]))
+
+        rect = matplotlib.patches.Rectangle(xy, w, h, linewidth=bl_x_off - bl_x,
+                                            edgecolor=edgecolor, 
+                                            facecolor='None')
         ax.add_patch(rect)
+        
+        # Display image on the plot
+        ax.imshow(im_rgb, origin='upper', 
+            extent=(left + margin,
+                    right - margin,
+                    bottom + margin,
+                    top - margin),
+            interpolation=interpolation)
 
         return ax  
 
