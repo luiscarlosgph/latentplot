@@ -73,17 +73,20 @@ Exemplary results
 Notes on dimensionality reduction methods
 -----------------------------------------
 
-* **PCA** (principal component analysis): 
+* [**PCA** (principal component analysis)](https://www.tandfonline.com/doi/abs/10.1080/14786440109462720): 
 
-   Assumes correlation (linear relationship) between features, sensitive to the scale of the features (features whose range is wider are more likely to become principle components), and it is not robust to outliers.
+   Assumes correlation (linear relationship) between features, sensitive to the scale of the features 
+   (features whose range is wider are more likely to become principle components), and it is not robust to outliers.
 
-* **t-SNE** (t-Distributed Stochastic Neighbor Embedding): 
+* [**t-SNE** (t-Distributed Stochastic Neighbor Embedding)](https://www.jmlr.org/papers/v9/vandermaaten08a.html): 
 
-   TODO
+   t-SNE does not assume linear relationships between features.
+   Observations that are close in the high-dimensional space are expected to be close in the dimensionality-reduced space. 
+   t-SNE copes well with odd outliers.
 
-* **UMAP** (Uniform Manifold Approximation and Projection): 
+* [**UMAP** (Uniform Manifold Approximation and Projection)](https://arxiv.org/abs/1802.03426): 
 
-   TODO
+   Fast, and scales well with regards to both dataset size and dimensionality.
 
 
 Author
