@@ -65,6 +65,10 @@ Exemplary results
    * **t-SNE**:
       
       <img src="https://github.com/luiscarlosgph/latentplot/blob/main/test/data/tsne.png" alt="CIFAR-10 t-SNE"> 
+   
+   * **UMAP**:
+   
+      <img src="https://github.com/luiscarlosgph/latentplot/blob/main/test/data/umap.png" alt="CIFAR-10 UMAP">
 
 <!---
 * [PascalVOC](http://host.robots.ox.ac.uk/pascal/VOC):
