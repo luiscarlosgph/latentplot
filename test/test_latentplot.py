@@ -10,6 +10,7 @@ import torch
 import torchvision
 import tempfile
 import PIL
+import time
 
 # My imports
 import videosum
@@ -74,8 +75,11 @@ class TestVisualizationMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot PCA
+        tic = time.time()
         plotter = latentplot.Plotter(method='pca')
         plot = plotter.plot(images, feature_vectors, labels)
+        toc = time.time()
+        print('[INFO] PCA time:', toc - tic, 'seconds.')
         
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
@@ -90,8 +94,8 @@ class TestVisualizationMethods(unittest.TestCase):
         
         print('[INFO] PCA unit test completed.')
 
-    def tsne_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 40000, path: str = 'test/data/tsne.png'):
+    def test_tsne_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 100, path: str = 'test/data/tsne.png'):
         """
         @brief Test that the t-SNE plot is produced without errors.
         """
@@ -107,8 +111,11 @@ class TestVisualizationMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot t-SNE
+        tic = time.time()
         plotter = latentplot.Plotter(method='tsne')
         plot = plotter.plot(images, feature_vectors, labels)
+        toc = time.time()
+        print('[INFO] t-SNE time:', toc - tic, 'seconds.')
 
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
@@ -123,8 +130,8 @@ class TestVisualizationMethods(unittest.TestCase):
 
         print('[INFO] t-SNE unit test completed.')
 
-    def umap_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 40000, path: str = 'test/data/umap.png'):
+    def test_umap_plot(self, width: int = 15360, height: int = 8640, 
+            num_images: int = 100, path: str = 'test/data/umap.png'):
         """
         @brief Test that the UMAP plot is produced without errors.
         """
@@ -140,8 +147,11 @@ class TestVisualizationMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot UMAP
+        tic = time.time()
         plotter = latentplot.Plotter(method='umap')
         plot = plotter.plot(images, feature_vectors, labels)
+        toc = time.time()
+        print('[INFO] UMAP time:', toc - tic, 'seconds.')
         
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
