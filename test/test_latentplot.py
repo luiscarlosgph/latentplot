@@ -10,7 +10,6 @@ import torch
 import torchvision
 import tempfile
 import PIL
-import time
 
 # My imports
 import videosum
@@ -33,7 +32,7 @@ def get_cifar10_samples(n: int) -> np.ndarray:
         train=True, download=True)
     
     # Check that the number of samples requested is available in CIFAR-10
-    assert(n < len(cifar10))
+    assert(n <= len(cifar10))
 
     # Loop over the images and convert them to BGR format
     samples = []
@@ -57,9 +56,117 @@ def get_cifar10_samples(n: int) -> np.ndarray:
 
 
 class TestVisualizationMethods(unittest.TestCase):
+    
+    def test_pca_plot_without_labels(self, width: int = 15360, 
+            height: int = 8640, num_images: int = 100, 
+            path: str = 'test/data/pca_no_labels.png'):
+        """
+        @brief Test that the PCA plot is produced without errors when no 
+               labels are provided.
+        """
+        print('[INFO] Running PCA without labels ...')
+
+        # Get samples from CIFAR-10 
+        samples = get_cifar10_samples(num_images)
+        images = [x[0] for x in samples]
+        labels = [x[1] for x in samples]
+
+        # Get latent vector for the images using InceptionV3
+        model = videosum.InceptionFeatureExtractor('vector')
+        feature_vectors = np.array([model.get_latent_feature_vector(x) \
+            for x in images])
+
+        # Plot PCA
+        plotter = latentplot.Plotter(method='pca')
+        plot = plotter.plot(images, feature_vectors)
+        
+        # Convert plot image from BGR to RGB
+        plot_rgb = plot[...,::-1].copy()
+
+        # Write image to disk
+        im = PIL.Image.fromarray(plot_rgb)
+        im.save(path)
+
+        # Test that the image produced is of the expected resolution
+        self.assertTrue(plot.shape[0] == height)
+        self.assertTrue(plot.shape[1] == width)
+        
+        print('[INFO] PCA without labels completed.')
+    
+    def test_tsne_plot_without_labels(self, width: int = 15360, 
+            height: int = 8640, num_images: int = 100, 
+            path: str = 'test/data/tsne_no_labels.png'):
+        """
+        @brief Test that the t-SNE plot is produced without errors when no
+               labels are provided.
+        """
+        print('[INFO] Running t-SNE without labels ...')
+
+        # Get samples from CIFAR-10 
+        samples = get_cifar10_samples(num_images)
+        images = [x[0] for x in samples]
+        labels = [x[1] for x in samples]
+
+        # Get latent vector for the images using InceptionV3
+        model = videosum.InceptionFeatureExtractor('vector')
+        feature_vectors = np.array([model.get_latent_feature_vector(x) \
+            for x in images])
+
+        # Plot PCA
+        plotter = latentplot.Plotter(method='tsne')
+        plot = plotter.plot(images, feature_vectors)
+        
+        # Convert plot image from BGR to RGB
+        plot_rgb = plot[...,::-1].copy()
+
+        # Write image to disk
+        im = PIL.Image.fromarray(plot_rgb)
+        im.save(path)
+
+        # Test that the image produced is of the expected resolution
+        self.assertTrue(plot.shape[0] == height)
+        self.assertTrue(plot.shape[1] == width)
+        
+        print('[INFO] t-SNE without labels completed.')
+
+    def test_umap_plot_without_labels(self, width: int = 15360, 
+            height: int = 8640, num_images: int = 100, 
+            path: str = 'test/data/umap_no_labels.png'):
+        """
+        @brief Test that the UMAP plot is produced without errors when no 
+               labels are provided.
+        """
+        print('[INFO] Running UMAP without labels ...')
+
+        # Get samples from CIFAR-10 
+        samples = get_cifar10_samples(num_images)
+        images = [x[0] for x in samples]
+        labels = [x[1] for x in samples]
+
+        # Get latent vector for the images using InceptionV3
+        model = videosum.InceptionFeatureExtractor('vector')
+        feature_vectors = np.array([model.get_latent_feature_vector(x) \
+            for x in images])
+
+        # Plot PCA
+        plotter = latentplot.Plotter(method='umap')
+        plot = plotter.plot(images, feature_vectors)
+        
+        # Convert plot image from BGR to RGB
+        plot_rgb = plot[...,::-1].copy()
+
+        # Write image to disk
+        im = PIL.Image.fromarray(plot_rgb)
+        im.save(path)
+
+        # Test that the image produced is of the expected resolution
+        self.assertTrue(plot.shape[0] == height)
+        self.assertTrue(plot.shape[1] == width)
+        
+        print('[INFO] UMAP without labels completed.')
 
     def test_pca_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 100, path: str = 'test/data/pca.png'):
+            num_images: int = 50000, path: str = 'test/data/pca.png'):
         """
         @brief Test that the PCA plot is produced without errors.
         """
@@ -75,11 +182,8 @@ class TestVisualizationMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot PCA
-        tic = time.time()
         plotter = latentplot.Plotter(method='pca')
         plot = plotter.plot(images, feature_vectors, labels)
-        toc = time.time()
-        print('[INFO] PCA time:', toc - tic, 'seconds.')
         
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
@@ -92,10 +196,10 @@ class TestVisualizationMethods(unittest.TestCase):
         self.assertTrue(plot.shape[0] == height)
         self.assertTrue(plot.shape[1] == width)
         
-        print('[INFO] PCA unit test completed.')
+        print('[INFO] PCA unit test completed.') 
 
     def test_tsne_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 100, path: str = 'test/data/tsne.png'):
+            num_images: int = 50000, path: str = 'test/data/tsne.png'):
         """
         @brief Test that the t-SNE plot is produced without errors.
         """
@@ -111,11 +215,8 @@ class TestVisualizationMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot t-SNE
-        tic = time.time()
         plotter = latentplot.Plotter(method='tsne')
         plot = plotter.plot(images, feature_vectors, labels)
-        toc = time.time()
-        print('[INFO] t-SNE time:', toc - tic, 'seconds.')
 
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
@@ -131,7 +232,7 @@ class TestVisualizationMethods(unittest.TestCase):
         print('[INFO] t-SNE unit test completed.')
 
     def test_umap_plot(self, width: int = 15360, height: int = 8640, 
-            num_images: int = 100, path: str = 'test/data/umap.png'):
+            num_images: int = 50000, path: str = 'test/data/umap.png'):
         """
         @brief Test that the UMAP plot is produced without errors.
         """
@@ -147,11 +248,8 @@ class TestVisualizationMethods(unittest.TestCase):
         feature_vectors = np.array([model.get_latent_feature_vector(x) for x in images])
 
         # Plot UMAP
-        tic = time.time()
         plotter = latentplot.Plotter(method='umap')
         plot = plotter.plot(images, feature_vectors, labels)
-        toc = time.time()
-        print('[INFO] UMAP time:', toc - tic, 'seconds.')
         
         # Convert plot image from BGR to RGB
         plot_rgb = plot[...,::-1].copy()
@@ -166,6 +264,6 @@ class TestVisualizationMethods(unittest.TestCase):
 
         print('[INFO] UMAP unit test completed.')
 
-
+    
 if __name__ == '__main__':
     unittest.main()
