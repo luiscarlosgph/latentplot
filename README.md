@@ -36,7 +36,7 @@ feature_vectors = [ ... ]
 labels = [ ... ]           
 
 # Produce a BGR image containing a 2D plot of the latent space with t-SNE
-plotter = latentplot.Plotter(method='tsne')                              
+plotter = latentplot.Plotter(method='tsne')  # You can use either 'pca', 'tsne' or 'umap'                              
 im_tsne = plotter.plot(images, feature_vectors, labels)  # Providing labels is optional
 ```
 
