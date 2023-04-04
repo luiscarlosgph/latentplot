@@ -57,7 +57,7 @@ The `latentplot.Plotter` constructor parameters are:
 Exemplary results
 -----------------
 
-* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html): the size of the images in this dataset is 32x32 pixels. The colour of the rectangle around each image indicates the class label of the image. The colour for each class is randomly chosen in every run.
+* [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html): the size of the images in this dataset is 32x32 pixels. The feature vectors to produce these plots were extracted with InceptionV3 trained on ImageNet. The colour of the rectangle around each image indicates the class label of the image. The colour for each class is randomly chosen in every run.
    * **PCA**:
    
       <img src="https://github.com/luiscarlosgph/latentplot/blob/main/test/data/pca.png" alt="CIFAR-10 PCA"> 
