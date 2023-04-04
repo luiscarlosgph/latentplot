@@ -26,7 +26,7 @@ Exemplary code snippet
 ----------------------
 
 ```python
-# List of images of shape (H, W, 3) and BGR
+# List of BGR images of shape (H, W, 3)
 images = [ ... ]           
 
 # List of vectors of shape (D,), where D is the vector dimension
