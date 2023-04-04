@@ -10,7 +10,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setuptools.setup(name='latentplot',
-    version='0.0.1',
+    version='0.0.2',
     description='Python module to produce an image plot of latent spaces.',
     author='Luis C. Garcia-Peraza Herrera',
     author_email='luiscarlos.gph@gmail.com',
@@ -29,7 +29,6 @@ setuptools.setup(name='latentplot',
         'scipy',
         'umap-learn',
         'pillow',
-        'videosum',  # Required for unit tests
     ],
     long_description=long_description,
     long_description_content_type='text/markdown',
