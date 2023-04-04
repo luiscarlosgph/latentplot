@@ -58,7 +58,13 @@ Exemplary results
 -----------------
 
 * [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html): the size of the images in this dataset is 32x32 pixels.
-
+   * **PCA**:
+   
+      <img src="https://github.com/luiscarlosgph/latentplot/blob/main/test/data/pca.png" alt="CIFAR-10 PCA"> 
+      
+   * **t-SNE**:
+      
+      <img src="https://github.com/luiscarlosgph/latentplot/blob/main/test/data/tsne.png" alt="CIFAR-10 t-SNE"> 
 
 <!---
 * [PascalVOC](http://host.robots.ox.ac.uk/pascal/VOC):
