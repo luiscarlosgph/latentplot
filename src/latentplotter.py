@@ -3,7 +3,6 @@
 @author Luis C. Garcia Peraza Herrera (luiscarlos.gph@gmail.com).
 @date   1 Mar 2023.
 """
-import random
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -237,12 +236,18 @@ class Plotter:
         if self.hide_axes:
             ax.axis('off')
         
-        # If labels are provided, find the smallest and largest class indices
+        # If labels are provided...
         edge_min = None
         edge_max = None
+        cmap = None
         if labels.shape[0] != 0:
+            # Find minimum and maximum class index
             edge_min = np.min(labels)
             edge_max = np.max(labels)
+
+            # Create colourmap for the labels
+            colors = np.random.rand(edge_max, 3)
+            cmap = matplotlib.colors.ListedColormap(colors)
         
         # Plot all the images
         for i in range(len(images)):
@@ -259,14 +264,15 @@ class Plotter:
             
             # Display image on plot
             self._imscatter(im, fv[0], fv[1], ax, (cell_width, cell_height),
-                edge_val=edge_val, edge_min=edge_min, edge_max=edge_max)
+                edge_val=edge_val, edge_min=edge_min, edge_max=edge_max,
+                cmap=cmap)
 
         return ax.get_figure()
 
     def _imscatter(self, im: np.ndarray, x: float, y: float, ax, 
             size: typing.Tuple[int, int], interpolation: str = 'bilinear', 
             lwfactor: float = 0.025, edge_val: int = None, 
-            edge_min: int = None, edge_max: int = None, cmap: str = 'RdYlGn'):
+            edge_min: int = None, edge_max: int = None, cmap=None):
         """
         @brief Displays an image on the reduced latent space plot.
         @details The x and y coordinates represent the coordinate where the
